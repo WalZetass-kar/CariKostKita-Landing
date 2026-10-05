@@ -1,3 +1,3 @@
 import type { Config } from 'tailwindcss';
-const config: Config = { content: ['./app/**/*.{js,ts,jsx,tsx}'], theme: { extend: { colors: { brand: { DEFAULT: '#A30D18', dark: '#7A0C12', soft: '#FBEAEC' }, canvas: '#F8F8F6', ink: { primary: '#18202F', secondary: '#344054', muted: '#667085' }, action: { whatsapp: '#16834B', maps: '#1A73E8' } }, fontFamily: { sans: ['Arial', 'Helvetica', 'sans-serif'] } } }, plugins: [] };
+const config: Config = { content: ['./app/**/*.{js,ts,jsx,tsx}'], theme: { extend: { colors: { brand: { DEFAULT: '#6D0808', dark: '#4F0505', soft: '#EEEAD7' }, canvas: '#FBFAF4', ink: { primary: '#261B19', secondary: '#655955', muted: '#8A7F79' } }, fontFamily: { sans: ['DM Sans', 'Arial', 'sans-serif'] } } }, plugins: [] };
 export default config;
