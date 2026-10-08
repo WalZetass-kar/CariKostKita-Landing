@@ -108,6 +108,49 @@ const faqs = [
 ];
 
 export default function Home() {
+  const [appConfig, setAppConfig] = useState({
+    apk: 'https://github.com/g-423/KosKita/releases/download/v1.0.0-beta/CariKostKita-v1.0.0-beta.apk',
+    waNumber: '6281270008899'
+  });
+
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const url = process.env.NEXT_PUBLIC_API_URL;
+        if (!url) return;
+        
+        // Fetch Settings
+        const setRes = await fetch(url + '/settings');
+        const setJson = await setRes.json();
+        
+        // Fetch App Release
+        const relRes = await fetch(url + '/latest-release');
+        const relJson = await relRes.json();
+        
+        let newApk = appConfig.apk;
+        let newWa = appConfig.waNumber;
+        
+        if (relJson.success && relJson.data?.apk_url) {
+           newApk = relJson.data.apk_url;
+        }
+        if (setJson.success && setJson.data?.contact_whatsapp) {
+           newWa = setJson.data.contact_whatsapp;
+        }
+        
+        setAppConfig({ apk: newApk, waNumber: newWa });
+      } catch (e) {
+        console.error('Failed to fetch dynamic settings', e);
+      }
+    }
+    fetchConfig();
+  }, []);
+
+  const apk = appConfig.apk;
+  const waNumber = appConfig.waNumber;
+  const repo = 'https://github.com/g-423/KosKita';
+  const waHelpUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo Admin CariKostKita, saya butuh informasi seputar aplikasi kost Pekanbaru.')}`;
+  const waOwnerUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo Admin CariKostKita, saya pemilik kost di Pekanbaru ingin mendaftarkan properti saya.')}`;
+
   const [menu, setMenu] = useState(false);
   const [open, setOpen] = useState<number | null>(0);
   const [phoneFilter, setPhoneFilter] = useState('Semua');
