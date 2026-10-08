@@ -114,6 +114,23 @@ export default function Home() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [activeInstallStep, setActiveInstallStep] = useState(0);
+  const [completedInstallSteps, setCompletedInstallSteps] = useState<number[]>([]);
+
+  const handleInstallStepClick = (stepIndex: number) => {
+    // Langkah terakhir mengakhiri panduan dan mengaktifkan seluruh langkah lagi.
+    if (stepIndex === 3) {
+      setActiveInstallStep(0);
+      setCompletedInstallSteps([]);
+      return;
+    }
+
+    setActiveInstallStep(stepIndex);
+    setCompletedInstallSteps((completedSteps) =>
+      completedSteps.includes(stepIndex)
+        ? completedSteps
+        : [...completedSteps, stepIndex]
+    );
+  };
 
   useEffect(() => {
     // Scroll Progress
@@ -381,10 +398,13 @@ export default function Home() {
                 { n: '3', t: 'Izinkan Sumber', d: 'Buka berkas unduhan dan aktifkan izin instalasi.' },
                 { n: '4', t: 'Selesai!', d: 'Buka aplikasi dan mulai mencari kost idamanmu.' },
               ].map((stepItem, idx) => (
-                <div
-                  className={`step install-step-card reveal-on-scroll ${activeInstallStep === idx ? 'active' : ''}`}
+                <button
+                  type="button"
+                  className={`step install-step-card ${activeInstallStep === idx ? 'active' : ''} ${completedInstallSteps.includes(idx) ? 'is-complete' : ''}`}
                   key={stepItem.n}
-                  onClick={() => setActiveInstallStep(idx)}
+                  onClick={() => handleInstallStepClick(idx)}
+                  disabled={completedInstallSteps.includes(idx)}
+                  aria-label={`${stepItem.t}${completedInstallSteps.includes(idx) ? ' (sudah dipilih)' : ''}`}
                 >
                   <span>{stepItem.n}</span>
                   <div>
@@ -398,7 +418,7 @@ export default function Home() {
                     </div>
                     <p>{stepItem.d}</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
 
@@ -510,9 +530,9 @@ export default function Home() {
           <p className="eyebrow">UJI COBA & MASUKAN</p>
           <h2>Bantu kami menyempurnakan aplikasi ini</h2>
           <p>
-            Menemukan bug atau punya usulan fitur? Sampaikan masukan Anda langsung ke admin WhatsApp atau halaman issue proyek.
+            Menemukan bug atau punya usulan fitur? Sampaikan masukan Anda langsung ke admin WhatsApp.
           </p>
-          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', marginTop: 22 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 22 }}>
             <a
               className="download"
               style={{ background: '#25D366' }}
@@ -522,10 +542,6 @@ export default function Home() {
             >
               <FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: 6 }} />
               <span>Kirim Masukan via WhatsApp</span>
-            </a>
-            <a className="feedback-link" href={`${repo}/issues/new`} target="_blank" rel="noopener noreferrer" style={{ marginTop: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <FontAwesomeIcon icon={faGithub} />
-              <span>Kirim via GitHub Issue</span>
             </a>
           </div>
         </div>

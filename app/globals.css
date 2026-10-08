@@ -65,10 +65,13 @@ button{font:inherit}
 .hero-filter-chip{border:1px solid rgba(109,8,8,.15);background:#fbfaf4;color:var(--ink);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;cursor:pointer;transition:all .2s ease}
 .hero-filter-chip:hover{background:#f3ece4;border-color:var(--burgundy)}
 .hero-filter-chip.active{background:var(--burgundy);color:#fff;border-color:var(--burgundy);box-shadow:0 2px 8px rgba(109,8,8,.3)}
-.install-step-card{cursor:pointer;transition:all .2s cubic-bezier(0.16,1,0.3,1);border:1px solid #e8e1d3;padding:12px 14px;border-radius:12px;background:#fff}
+.install-step-card{cursor:pointer;display:block;width:100%;font:inherit;text-align:left;color:inherit;transition:all .2s cubic-bezier(0.16,1,0.3,1);border:1px solid #e8e1d3;padding:12px 14px;border-radius:12px;background:#fff}
 .install-step-card:hover{transform:translateY(-2px);border-color:var(--burgundy)}
 .install-step-card.active{border:2px solid var(--burgundy)!important;background:#fffdfa!important;box-shadow:0 6px 18px rgba(109,8,8,.12)}
 .install-step-card.active>span{background:var(--burgundy)!important;color:#fff!important;box-shadow:0 2px 8px rgba(109,8,8,.3)}
+.install-step-card:disabled{cursor:default;opacity:1;transform:none}
+.install-step-card.is-complete{border-color:#d8d0c1;background:#faf8f2}
+.install-step-card.is-complete>span{background:#b5aea2;color:#fff;box-shadow:none}
 .phones-stack{position:relative;height:400px;display:flex;align-items:center;justify-content:center}
 .phones-stack .phone:nth-child(1){position:absolute;left:10px;transform:rotate(-9deg)}
 .phones-stack .phone:nth-child(2){z-index:2}
