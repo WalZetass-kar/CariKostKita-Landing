@@ -39,6 +39,7 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 config.autoAddCss = false;
 
 const apk = 'https://github.com/g-423/KosKita/releases/download/v1.0.0-beta/CariKostKita-v1.0.0-beta.apk';
+const publicApiUrl = process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL || 'https://carikostkitafastapi.vercel.app';
 const repo = 'https://github.com/g-423/KosKita';
 const waNumber = '6281270008899';
 const waHelpUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo Admin CariKostKita, saya butuh informasi seputar aplikasi kost Pekanbaru.')}`;
@@ -116,15 +117,14 @@ export default function Home() {
   useEffect(() => {
     async function fetchConfig() {
       try {
-        const url = process.env.NEXT_PUBLIC_API_URL;
-        if (!url) return;
-        
         // Fetch Settings
-        const setRes = await fetch(url + '/settings');
+        const setRes = await fetch(publicApiUrl + '/settings', { cache: 'no-store' });
+        if (!setRes.ok) throw new Error('Public settings request failed');
         const setJson = await setRes.json();
         
         // Fetch App Release
-        const relRes = await fetch(url + '/latest-release');
+        const relRes = await fetch(publicApiUrl + '/latest-release', { cache: 'no-store' });
+        if (!relRes.ok) throw new Error('Latest release request failed');
         const relJson = await relRes.json();
         
         let newApk = appConfig.apk;
