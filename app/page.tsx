@@ -38,12 +38,11 @@ import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
 config.autoAddCss = false;
 
-const apk = 'https://github.com/g-423/KosKita/releases/download/v1.0.0-beta/CariKostKita-v1.0.0-beta.apk';
-const publicApiUrl = process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL || 'https://carikostkitafastapi.vercel.app';
+const publicApiUrl = (
+  process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
+  'https://carikostkitafastapi.vercel.app'
+).replace(/\/+$/, '');
 const repo = 'https://github.com/g-423/KosKita';
-const waNumber = '6281270008899';
-const waHelpUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo Admin CariKostKita, saya butuh informasi seputar aplikasi kost Pekanbaru.')}`;
-const waOwnerUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent('Halo Admin CariKostKita, saya pemilik kost di Pekanbaru ingin mendaftarkan properti saya.')}`;
 
 const nav = [
   ['#beranda', 'Beranda'],
@@ -53,7 +52,7 @@ const nav = [
   ['#faq', 'FAQ'],
 ];
 
-const Button = ({ light = false, label = 'Download APK' }: { light?: boolean; label?: string }) => (
+const Button = ({ apk, light = false, label = 'Download APK' }: { apk: string; light?: boolean; label?: string }) => (
   <a className={`download ${light ? 'download--light' : ''}`} href={apk}>
     <FontAwesomeIcon icon={faDownload} style={{ marginRight: 6 }} />
     <span>{label}</span>
@@ -117,27 +116,26 @@ export default function Home() {
   useEffect(() => {
     async function fetchConfig() {
       try {
-        // Fetch Settings
-        const setRes = await fetch(publicApiUrl + '/settings', { cache: 'no-store' });
-        if (!setRes.ok) throw new Error('Public settings request failed');
-        const setJson = await setRes.json();
-        
-        // Fetch App Release
-        const relRes = await fetch(publicApiUrl + '/latest-release', { cache: 'no-store' });
-        if (!relRes.ok) throw new Error('Latest release request failed');
-        const relJson = await relRes.json();
-        
-        let newApk = appConfig.apk;
-        let newWa = appConfig.waNumber;
-        
-        if (relJson.success && relJson.data?.apk_url) {
-           newApk = relJson.data.apk_url;
-        }
-        if (setJson.success && setJson.data?.contact_whatsapp) {
-           newWa = setJson.data.contact_whatsapp;
-        }
-        
-        setAppConfig({ apk: newApk, waNumber: newWa });
+        const [settingsResult, releaseResult] = await Promise.allSettled([
+          fetch(publicApiUrl + '/settings', { cache: 'no-store' }),
+          fetch(publicApiUrl + '/latest-release', { cache: 'no-store' }),
+        ]);
+        const [setJson, relJson] = await Promise.all([
+          settingsResult.status === 'fulfilled' && settingsResult.value.ok
+            ? settingsResult.value.json()
+            : Promise.resolve(null),
+          releaseResult.status === 'fulfilled' && releaseResult.value.ok
+            ? releaseResult.value.json()
+            : Promise.resolve(null),
+        ]);
+
+        setAppConfig((current) => ({
+          apk: relJson?.success && relJson.data?.apk_url ? relJson.data.apk_url : current.apk,
+          waNumber:
+            setJson?.success && setJson.data?.contact_whatsapp
+              ? setJson.data.contact_whatsapp
+              : current.waNumber,
+        }));
       } catch (e) {
         console.error('Failed to fetch dynamic settings', e);
       }
@@ -235,7 +233,7 @@ export default function Home() {
           </nav>
 
           <div className="nav-download">
-            <Button />
+            <Button apk={apk} />
           </div>
 
           <button
@@ -254,7 +252,7 @@ export default function Home() {
                 {l}
               </a>
             ))}
-            <Button />
+            <Button apk={apk} />
           </nav>
         )}
       </header>
@@ -274,7 +272,7 @@ export default function Home() {
             </p>
 
             <div className="hero__actions">
-              <Button />
+              <Button apk={apk} />
               <a className="outline-button" href="#fitur">
                 Lihat Fitur <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 6 }} />
               </a>
@@ -466,7 +464,7 @@ export default function Home() {
             </div>
 
             <div className="install-actions">
-              <Button />
+              <Button apk={apk} />
               <button
                 type="button"
                 onClick={() => setShowModal(true)}
@@ -499,7 +497,7 @@ export default function Home() {
                 <FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: 6 }} />
                 <span>Daftar via WhatsApp</span>
               </a>
-              <Button light label="Download Aplikasi" />
+              <Button apk={apk} light label="Download Aplikasi" />
             </div>
           </div>
 
@@ -598,7 +596,7 @@ export default function Home() {
             <h2>Yuk, Temukan Kost Terbaikmu Sekarang!</h2>
             <p>Download aplikasinya sekarang dan mulai pencarian kost impianmu di Pekanbaru.</p>
           </div>
-          <Button light />
+          <Button apk={apk} light />
         </div>
       </section>
 
