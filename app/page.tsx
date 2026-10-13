@@ -27,11 +27,15 @@ import {
   faPhone,
   faEnvelope,
   faMapPin,
+  faBullhorn,
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faAndroid,
   faWhatsapp,
   faGithub,
+  faInstagram,
+  faFacebook,
+  faTiktok,
 } from '@fortawesome/free-brands-svg-icons';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
@@ -53,7 +57,7 @@ const nav = [
 ];
 
 const Button = ({ apk, light = false, label = 'Download APK' }: { apk: string; light?: boolean; label?: string }) => (
-  <a className={`download ${light ? 'download--light' : ''}`} href={apk}>
+  <a className={`download ${light ? 'download--light' : ''}`} href={apk} download>
     <FontAwesomeIcon icon={faDownload} style={{ marginRight: 6 }} />
     <span>{label}</span>
   </a>
@@ -77,6 +81,26 @@ interface AppConfigState {
   heroBadge2: string;
   apk: string;
   waNumber: string;
+  bannerActive: boolean;
+  bannerText: string;
+  bannerLink: string;
+  bannerType: string;
+  heroImageUrl: string;
+  logoUrl: string;
+  githubUrl: string;
+  instagram: string;
+  facebook: string;
+  tiktok: string;
+}
+
+interface PromoAd {
+  id: string | number;
+  title: string;
+  description?: string;
+  image?: string;
+  image_url?: string;
+  link?: string;
+  target_url?: string;
 }
 
 const defaultConfig: AppConfigState = {
@@ -93,26 +117,42 @@ const defaultConfig: AppConfigState = {
   targetCity: 'Pekanbaru',
   apkSize: '6.9 MB',
   minAndroid: 'Android 8.0+',
-  heroBadge1: 'Lokasi dekat kampus UNRI & UIR',
+  heroBadge1: 'Lokasi dekat kampus & area strategis',
   heroBadge2: 'Detail kost & foto kamar lengkap',
   apk: 'https://github.com/g-423/KosKita/releases/download/v1.0.0-beta/CariKostKita-v1.0.0-beta.apk',
   waNumber: '6281270008899',
+  bannerActive: false,
+  bannerText: '',
+  bannerLink: '',
+  bannerType: 'promo',
+  heroImageUrl: '',
+  logoUrl: '',
+  githubUrl: 'https://github.com/g-423/KosKita',
+  instagram: 'https://instagram.com/carikostkita',
+  facebook: 'https://facebook.com/carikostkita',
+  tiktok: 'https://tiktok.com/@carikostkita',
 };
 
 export default function Home() {
   const [appConfig, setAppConfig] = useState<AppConfigState>(defaultConfig);
+  const [promoAds, setPromoAds] = useState<PromoAd[]>([]);
 
   useEffect(() => {
     async function fetchConfig() {
       try {
-        const [fullResult, settingsResult, releaseResult] = await Promise.allSettled([
+        const [fullResult, proxyResult, settingsResult, releaseResult, adsResult] = await Promise.allSettled([
           fetch(publicApiUrl + '/api/v1/public/settings', { cache: 'no-store' }),
+          fetch('/api/settings', { cache: 'no-store' }),
           fetch(publicApiUrl + '/settings', { cache: 'no-store' }),
           fetch(publicApiUrl + '/latest-release', { cache: 'no-store' }),
+          fetch('/api/ads', { cache: 'no-store' }),
         ]);
-        const [fullJson, setJson, relJson] = await Promise.all([
+        const [fullJson, proxyJson, setJson, relJson, adsJson] = await Promise.all([
           fullResult.status === 'fulfilled' && fullResult.value.ok
             ? fullResult.value.json()
+            : Promise.resolve(null),
+          proxyResult.status === 'fulfilled' && proxyResult.value.ok
+            ? proxyResult.value.json()
             : Promise.resolve(null),
           settingsResult.status === 'fulfilled' && settingsResult.value.ok
             ? settingsResult.value.json()
@@ -120,9 +160,16 @@ export default function Home() {
           releaseResult.status === 'fulfilled' && releaseResult.value.ok
             ? releaseResult.value.json()
             : Promise.resolve(null),
+          adsResult.status === 'fulfilled' && adsResult.value.ok
+            ? adsResult.value.json()
+            : Promise.resolve(null),
         ]);
 
-        const full = fullJson?.data || {};
+        const full = fullJson?.data || proxyJson?.data || {};
+        if (adsJson?.data && Array.isArray(adsJson.data) && adsJson.data.length > 0) {
+          setPromoAds(adsJson.data);
+        }
+
         setAppConfig((current) => ({
           ...current,
           appName: full.appName || full.app_name || current.appName,
@@ -142,6 +189,16 @@ export default function Home() {
           heroBadge2: full.heroBadge2 || full.hero_badge_2 || current.heroBadge2,
           apk: full.apkUrl || full.apk_url || (relJson?.success && relJson.data?.apk_url ? relJson.data.apk_url : current.apk),
           waNumber: full.whatsapp || full.contact_whatsapp || (setJson?.success && setJson.data?.contact_whatsapp ? setJson.data.contact_whatsapp : current.waNumber),
+          bannerActive: Boolean(full.bannerActive ?? full.banner_active ?? current.bannerActive),
+          bannerText: full.bannerText || full.banner_text || current.bannerText,
+          bannerLink: full.bannerLink || full.banner_link || current.bannerLink,
+          bannerType: full.bannerType || full.banner_type || current.bannerType,
+          heroImageUrl: full.heroImageUrl || full.hero_image_url || current.heroImageUrl,
+          logoUrl: full.logoUrl || full.logo_url || current.logoUrl,
+          githubUrl: full.githubUrl || full.github_url || current.githubUrl,
+          instagram: full.instagram || current.instagram,
+          facebook: full.facebook || current.facebook,
+          tiktok: full.tiktok || current.tiktok,
         }));
       } catch (e) {
         console.error('Failed to fetch dynamic settings', e);
@@ -306,13 +363,38 @@ export default function Home() {
         aria-hidden="true"
       />
 
+      {/* Announcement Banner (Managed from Admin Dashboard) */}
+      {appConfig.bannerActive && appConfig.bannerText && (
+        <div className={`announcement-banner announcement-banner--${appConfig.bannerType || 'promo'}`}>
+          <div className="shell announcement-inner">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <FontAwesomeIcon icon={faBullhorn} />
+              {appConfig.bannerText}
+            </span>
+            {appConfig.bannerLink && (
+              <a href={appConfig.bannerLink} className="announcement-link">
+                Lihat Detail <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="site-header">
         <div className="shell nav-wrap">
           <a className="brand" href="#beranda">
-            <span className="brand__mark">
-              <FontAwesomeIcon icon={faBuilding} />
-            </span>
+            {appConfig.logoUrl ? (
+              <img
+                src={appConfig.logoUrl}
+                alt={appConfig.appName}
+                style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
+              />
+            ) : (
+              <span className="brand__mark">
+                <FontAwesomeIcon icon={faBuilding} />
+              </span>
+            )}
             {appConfig.appName}
           </a>
 
@@ -426,7 +508,9 @@ export default function Home() {
             <div className="hero-3d-phone">
               <img
                 src={
-                  phoneFilter === 'Putri'
+                  appConfig.heroImageUrl
+                    ? appConfig.heroImageUrl
+                    : phoneFilter === 'Putri'
                     ? '/mockup-hero-putri.png'
                     : phoneFilter === 'Putra'
                     ? '/mockup-hero-putra.png'
@@ -439,20 +523,22 @@ export default function Home() {
               />
             </div>
 
-            {/* Interactive Filter Pills Floating in Hero */}
-            <div className="hero-filter-selector">
-              <span className="hero-filter-label">Kategori:</span>
-              {(['Semua', 'Putri', 'Putra', 'Campur'] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setPhoneFilter(key)}
-                  className={`hero-filter-chip ${phoneFilter === key ? 'active' : ''}`}
-                >
-                  {key}
-                </button>
-              ))}
-            </div>
+            {/* Interactive Filter Pills Floating in Hero (Active when using default mockup) */}
+            {!appConfig.heroImageUrl && (
+              <div className="hero-filter-selector">
+                <span className="hero-filter-label">Kategori:</span>
+                {(['Semua', 'Putri', 'Putra', 'Campur'] as const).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setPhoneFilter(key)}
+                    className={`hero-filter-chip ${phoneFilter === key ? 'active' : ''}`}
+                  >
+                    {key}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className="soft-card soft-card--bottom">
               <FontAwesomeIcon icon={faHeart} style={{ marginRight: 6 }} />
@@ -461,6 +547,45 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Dynamic Promotional Ads & Campaigns (Managed from Admin Dashboard) */}
+      {promoAds.length > 0 && (
+        <section className="promo-section reveal-on-scroll">
+          <div className="shell">
+            <div style={{ display: 'grid', gap: 16 }}>
+              {promoAds.map((ad) => (
+                <div key={ad.id} className="promo-banner-card">
+                  <div className="promo-banner-content">
+                    <p className="eyebrow" style={{ marginBottom: 4 }}>PROMOSI & EVENT KHUSUS</p>
+                    <h3 style={{ fontSize: 20, fontWeight: 700, margin: '6px 0 8px' }}>{ad.title}</h3>
+                    {ad.description && <p style={{ fontSize: 13, color: '#655955', margin: 0, lineHeight: 1.6 }}>{ad.description}</p>}
+                    {(ad.target_url || ad.link) && (
+                      <div style={{ marginTop: 14 }}>
+                        <a
+                          href={ad.target_url || ad.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="download"
+                          style={{ minHeight: 38, padding: '0 18px', fontSize: 12 }}
+                        >
+                          Kunjungi Penawaran <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 6 }} />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  {(ad.image_url || ad.image) && (
+                    <img
+                      src={ad.image_url || ad.image}
+                      alt={ad.title}
+                      className="promo-banner-img"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Prerelease Section with Scroll Animation */}
       <section className="section prerelease reveal-on-scroll">
@@ -646,13 +771,28 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="social-links" style={{ marginTop: 16 }}>
-                <a href={repo} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <FontAwesomeIcon icon={faGithub} /> GitHub Proyek
+              <div className="social-links" style={{ marginTop: 16, flexWrap: 'wrap', gap: 14 }}>
+                <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <FontAwesomeIcon icon={faGithub} /> GitHub
                 </a>
                 <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1ebe5d' }}>
-                  <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp Bantuan
+                  <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
                 </a>
+                {appConfig.instagram && (
+                  <a href={appConfig.instagram} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#E1306C' }}>
+                    <FontAwesomeIcon icon={faInstagram} /> Instagram
+                  </a>
+                )}
+                {appConfig.facebook && (
+                  <a href={appConfig.facebook} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1877F2' }}>
+                    <FontAwesomeIcon icon={faFacebook} /> Facebook
+                  </a>
+                )}
+                {appConfig.tiktok && (
+                  <a href={appConfig.tiktok} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <FontAwesomeIcon icon={faTiktok} /> TikTok
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -719,9 +859,17 @@ export default function Home() {
         <div className="shell footer-grid">
           <div>
             <a href="#beranda" className="brand">
-              <span className="brand__mark">
-                <FontAwesomeIcon icon={faBuilding} />
-              </span>
+              {appConfig.logoUrl ? (
+                <img
+                  src={appConfig.logoUrl}
+                  alt={appConfig.appName}
+                  style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
+                />
+              ) : (
+                <span className="brand__mark">
+                  <FontAwesomeIcon icon={faBuilding} />
+                </span>
+              )}
               {appConfig.appName}
             </a>
             <p>{appConfig.tagline || `Kost terbaik, untuk masa depanmu di ${appConfig.targetCity}.`}</p>
@@ -737,12 +885,27 @@ export default function Home() {
           </nav>
 
           <div className="footer-social">
-            <a href={repo} target="_blank" rel="noopener noreferrer" title="GitHub">
+            <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" title="GitHub">
               <FontAwesomeIcon icon={faGithub} size="lg" />
             </a>
             <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" title="WhatsApp" style={{ color: '#25D366' }}>
               <FontAwesomeIcon icon={faWhatsapp} size="lg" />
             </a>
+            {appConfig.instagram && (
+              <a href={appConfig.instagram} target="_blank" rel="noopener noreferrer" title="Instagram" style={{ color: '#E1306C' }}>
+                <FontAwesomeIcon icon={faInstagram} size="lg" />
+              </a>
+            )}
+            {appConfig.facebook && (
+              <a href={appConfig.facebook} target="_blank" rel="noopener noreferrer" title="Facebook" style={{ color: '#1877F2' }}>
+                <FontAwesomeIcon icon={faFacebook} size="lg" />
+              </a>
+            )}
+            {appConfig.tiktok && (
+              <a href={appConfig.tiktok} target="_blank" rel="noopener noreferrer" title="TikTok">
+                <FontAwesomeIcon icon={faTiktok} size="lg" />
+              </a>
+            )}
           </div>
         </div>
         <div className="shell copyright">© 2026 {appConfig.appName}. All rights reserved.</div>
