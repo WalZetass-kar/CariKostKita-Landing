@@ -165,7 +165,11 @@ export default function Home() {
             : Promise.resolve(null),
         ]);
 
-        const full = fullJson?.data || proxyJson?.data || {};
+        // Merge settings: proxyJson contains live Admin-Gue + FastAPI merged configuration
+        const full = {
+          ...(fullJson?.data || {}),
+          ...(proxyJson?.data || {}),
+        };
         if (adsJson?.data && Array.isArray(adsJson.data) && adsJson.data.length > 0) {
           setPromoAds(adsJson.data);
         }
