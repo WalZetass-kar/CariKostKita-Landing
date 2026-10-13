@@ -109,18 +109,32 @@ const faqs = [
 
 export default function Home() {
   const [appConfig, setAppConfig] = useState({
+    appName: 'CariKostKita',
+    tagline: 'Temukan kost impianmu dengan mudah di Pekanbaru',
+    heroText: 'CariKostKita hadir untuk memudahkan kamu menemukan kost terbaik di Pekanbaru. Dengan tampilan yang simpel, cepat, dan lengkap, semua kebutuhan kost ada di genggaman.',
+    versionName: 'v1.0.0-beta',
+    releaseNotes: 'Rilis beta resmi CariKostKita untuk mahasiswa dan warga Pekanbaru.',
+    supportEmail: 'support@carikostkita.id',
+    contactPhone: '0761-555-0123',
+    address: 'Jl. Soekarno Hatta No. 1, Pekanbaru, Riau',
+    siteTitle: 'CariKostKita - Cari Kost Terpercaya di Pekanbaru',
+    siteDescription: 'Platform pencarian kost terverifikasi dengan info harga, lokasi, dan fasilitas akurat.',
     apk: 'https://github.com/g-423/KosKita/releases/download/v1.0.0-beta/CariKostKita-v1.0.0-beta.apk',
-    waNumber: '6281270008899'
+    waNumber: '6281270008899',
   });
 
   useEffect(() => {
     async function fetchConfig() {
       try {
-        const [settingsResult, releaseResult] = await Promise.allSettled([
+        const [fullResult, settingsResult, releaseResult] = await Promise.allSettled([
+          fetch(publicApiUrl + '/api/v1/public/settings', { cache: 'no-store' }),
           fetch(publicApiUrl + '/settings', { cache: 'no-store' }),
           fetch(publicApiUrl + '/latest-release', { cache: 'no-store' }),
         ]);
-        const [setJson, relJson] = await Promise.all([
+        const [fullJson, setJson, relJson] = await Promise.all([
+          fullResult.status === 'fulfilled' && fullResult.value.ok
+            ? fullResult.value.json()
+            : Promise.resolve(null),
           settingsResult.status === 'fulfilled' && settingsResult.value.ok
             ? settingsResult.value.json()
             : Promise.resolve(null),
@@ -129,12 +143,21 @@ export default function Home() {
             : Promise.resolve(null),
         ]);
 
+        const full = fullJson?.data || {};
         setAppConfig((current) => ({
-          apk: relJson?.success && relJson.data?.apk_url ? relJson.data.apk_url : current.apk,
-          waNumber:
-            setJson?.success && setJson.data?.contact_whatsapp
-              ? setJson.data.contact_whatsapp
-              : current.waNumber,
+          ...current,
+          appName: full.appName || full.app_name || current.appName,
+          tagline: full.tagline || current.tagline,
+          heroText: full.siteDescription || full.site_description || current.heroText,
+          versionName: full.versionName || full.version_name || current.versionName,
+          releaseNotes: full.releaseNotes || full.release_notes || current.releaseNotes,
+          supportEmail: full.supportEmail || full.support_email || current.supportEmail,
+          contactPhone: full.contactPhone || full.contact_phone || current.contactPhone,
+          address: full.address || full.office_address || current.address,
+          siteTitle: full.siteTitle || full.site_title || current.siteTitle,
+          siteDescription: full.siteDescription || full.site_description || current.siteDescription,
+          apk: full.apkUrl || full.apk_url || (relJson?.success && relJson.data?.apk_url ? relJson.data.apk_url : current.apk),
+          waNumber: full.whatsapp || full.contact_whatsapp || (setJson?.success && setJson.data?.contact_whatsapp ? setJson.data.contact_whatsapp : current.waNumber),
         }));
       } catch (e) {
         console.error('Failed to fetch dynamic settings', e);
@@ -221,7 +244,7 @@ export default function Home() {
             <span className="brand__mark">
               <FontAwesomeIcon icon={faBuilding} />
             </span>
-            CariKostKita
+            {appConfig.appName}
           </a>
 
           <nav className="nav-links">
@@ -263,12 +286,12 @@ export default function Home() {
         <div className="hero__overlay" />
         <div className="shell hero__content">
           <div className="hero__copy">
-            <p className="eyebrow eyebrow--light">CARI KOST KITA • PEKANBARU</p>
+            <p className="eyebrow eyebrow--light">{appConfig.appName.toUpperCase()} • PEKANBARU</p>
             <h1>
-              Temukan Kost Impianmu <span>di Pekanbaru</span>
+              {appConfig.tagline || 'Temukan Kost Impianmu di Pekanbaru'}
             </h1>
             <p className="hero__text">
-              CariKostKita hadir untuk memudahkan kamu menemukan kost terbaik di Pekanbaru. Dengan tampilan yang simpel, cepat, dan lengkap, semua kebutuhan kost ada di genggaman.
+              {appConfig.heroText}
             </p>
 
             <div className="hero__actions">
@@ -282,7 +305,7 @@ export default function Home() {
             <div style={{ marginTop: 14, fontSize: 11, color: '#f7d9c9', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
               <span>
                 <FontAwesomeIcon icon={faBoxArchive} style={{ marginRight: 5 }} />
-                6.9 MB
+                {appConfig.versionName || 'v1.0.0-beta'}
               </span>
               <span>•</span>
               <span>
@@ -608,9 +631,9 @@ export default function Home() {
               <span className="brand__mark">
                 <FontAwesomeIcon icon={faBuilding} />
               </span>
-              CariKostKita
+              {appConfig.appName}
             </a>
-            <p>Kost terbaik, untuk masa depanmu di Pekanbaru.</p>
+            <p>{appConfig.tagline || 'Kost terbaik, untuk masa depanmu di Pekanbaru.'}</p>
           </div>
 
           <nav>
@@ -630,7 +653,7 @@ export default function Home() {
             </a>
           </div>
         </div>
-        <div className="shell copyright">© 2026 CariKostKita. All rights reserved.</div>
+        <div className="shell copyright">© 2026 {appConfig.appName}. All rights reserved.</div>
       </footer>
 
       {/* Floating WhatsApp Quick Action */}
