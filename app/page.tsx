@@ -170,8 +170,16 @@ export interface AppConfigState {
   bannerType: string;
   heroImageUrl: string;
   logoUrl: string;
+  footerLogoUrl: string;
+  appIconUrl: string;
   faviconUrl: string;
   ogImageUrl: string;
+  popupActive: boolean;
+  popupTitle: string;
+  popupContent: string;
+  popupImageUrl: string;
+  popupButtonLabel: string;
+  popupButtonUrl: string;
   brandColor: string;
   githubUrl: string;
   instagram: string;
@@ -204,6 +212,7 @@ export interface AppConfigState {
   finalCtaButtonLabel: string;
   footerTagline: string;
   footerCopyright: string;
+  securityModalActive: boolean;
   securityModalTitle: string;
   securityModalDesc: string;
   securityModalNote: string;
@@ -252,8 +261,16 @@ const defaultConfig: AppConfigState = {
   bannerType: 'promo',
   heroImageUrl: '',
   logoUrl: '',
+  footerLogoUrl: '',
+  appIconUrl: '',
   faviconUrl: '',
   ogImageUrl: '',
+  popupActive: false,
+  popupTitle: '',
+  popupContent: '',
+  popupImageUrl: '',
+  popupButtonLabel: '',
+  popupButtonUrl: '',
   brandColor: '#6D0808',
   githubUrl: 'https://github.com/g-423/KosKita',
   instagram: 'https://instagram.com/carikostkita',
@@ -286,6 +303,7 @@ const defaultConfig: AppConfigState = {
   finalCtaButtonLabel: 'Download APK Sekarang',
   footerTagline: 'Kost terbaik, untuk masa depanmu.',
   footerCopyright: '© 2026 CariKostKita. All rights reserved.',
+  securityModalActive: true,
   securityModalTitle: 'Panduan Dialog Download Android',
   securityModalDesc: 'Saat mengunduh berkas APK di luar Google Play Store, peramban (Chrome) akan menampilkan pesan standar keamanan:',
   securityModalNote: 'Berkas APK CariKostKita 100% aman dan diverifikasi langsung dari repositori resmi proyek.',
@@ -369,8 +387,8 @@ export default function Home() {
           ...(fullJson?.data || {}),
           ...(proxyJson?.data || {}),
         };
-        if (adsJson?.data && Array.isArray(adsJson.data) && adsJson.data.length > 0) {
-          setPromoAds(adsJson.data);
+        if (adsJson) {
+          setPromoAds(Array.isArray(adsJson.data) ? adsJson.data : []);
         }
 
         const resolveArray = <T,>(camelArr: any, snakeArr: any, currentArr: T[]): T[] => {
@@ -378,6 +396,38 @@ export default function Home() {
           if (Array.isArray(snakeArr) && snakeArr.length > 0) return snakeArr;
           return currentArr;
         };
+
+        const isFalse = (val: any) => val === false || val === 'false' || val === 0 || val === '0';
+        const isTrue = (val: any) => val === true || val === 'true' || val === 1 || val === '1';
+
+        const bannerActiveResolved = isFalse(full.bannerActive) || isFalse(full.banner_active)
+          ? false
+          : (isTrue(full.bannerActive) || isTrue(full.banner_active) ? true : false);
+
+        const popupActiveResolved = isFalse(full.popupActive) || isFalse(full.popup_active)
+          ? false
+          : (isTrue(full.popupActive) || isTrue(full.popup_active) ? true : false);
+
+        const securityModalActiveResolved = isFalse(full.securityModalActive) || isFalse(full.security_modal_active)
+          ? false
+          : true;
+
+        const feedbackActiveResolved = isFalse(full.feedbackActive) || isFalse(full.feedback_active)
+          ? false
+          : true;
+
+        if (popupActiveResolved) {
+          try {
+            const dismissed = sessionStorage.getItem('ckk_popup_dismissed');
+            if (dismissed !== 'true') {
+              setShowPopupModal(true);
+            }
+          } catch (_) {
+            setShowPopupModal(true);
+          }
+        } else {
+          setShowPopupModal(false);
+        }
 
         setAppConfig((current) => ({
           ...current,
@@ -399,14 +449,23 @@ export default function Home() {
           heroBadge2: full.heroBadge2 || full.hero_badge_2 || current.heroBadge2,
           apk: full.apkUrl || full.apk_url || (relJson?.success && relJson.data?.apk_url ? relJson.data.apk_url : current.apk),
           waNumber: full.whatsapp || full.contact_whatsapp || (setJson?.success && setJson.data?.contact_whatsapp ? setJson.data.contact_whatsapp : current.waNumber),
-          bannerActive: Boolean(full.bannerActive ?? full.banner_active ?? current.bannerActive),
+          bannerActive: bannerActiveResolved,
           bannerText: full.bannerText || full.banner_text || current.bannerText,
           bannerLink: full.bannerLink || full.banner_link || current.bannerLink,
           bannerType: full.bannerType || full.banner_type || current.bannerType,
           heroImageUrl: full.heroImageUrl || full.hero_image_url || current.heroImageUrl,
           logoUrl: full.logoUrl || full.logo_url || current.logoUrl,
+          footerLogoUrl: full.footerLogoUrl || full.footer_logo_url || current.footerLogoUrl,
+          appIconUrl: full.appIconUrl || full.app_icon_url || current.appIconUrl,
           faviconUrl: full.faviconUrl || full.favicon_url || current.faviconUrl,
           ogImageUrl: full.ogImageUrl || full.og_image_url || current.ogImageUrl,
+          popupActive: popupActiveResolved,
+          popupTitle: full.popupTitle || full.popup_title || current.popupTitle,
+          popupContent: full.popupContent || full.popup_content || current.popupContent,
+          popupImageUrl: full.popupImageUrl || full.popup_image_url || current.popupImageUrl,
+          popupButtonLabel: full.popupButtonLabel || full.popup_button_label || current.popupButtonLabel,
+          popupButtonUrl: full.popupButtonUrl || full.popup_button_url || current.popupButtonUrl,
+          securityModalActive: securityModalActiveResolved,
           brandColor: full.brandColor || full.brand_color || current.brandColor,
           githubUrl: full.githubUrl || full.github_url || current.githubUrl,
           instagram: full.instagram || current.instagram,
@@ -429,7 +488,7 @@ export default function Home() {
           ownerSecondaryLabel: full.ownerSecondaryLabel || full.owner_secondary_label || current.ownerSecondaryLabel,
           aboutTitle: full.aboutTitle || full.about_title || current.aboutTitle,
           aboutStory: full.aboutStory || full.about_story || current.aboutStory,
-          feedbackActive: full.feedbackActive !== undefined ? Boolean(full.feedbackActive) : full.feedback_active !== undefined ? Boolean(full.feedback_active) : current.feedbackActive,
+          feedbackActive: feedbackActiveResolved,
           feedbackTitle: full.feedbackTitle || full.feedback_title || current.feedbackTitle,
           feedbackDesc: full.feedbackDesc || full.feedback_desc || current.feedbackDesc,
           feedbackButtonLabel: full.feedbackButtonLabel || full.feedback_button_label || current.feedbackButtonLabel,
@@ -458,7 +517,7 @@ export default function Home() {
     fetchConfig();
   }, []);
 
-  // Realtime client-side sync of document title, description, and favicon
+  // Realtime client-side sync of document title, description, favicon, app icon, and OG image
   useEffect(() => {
     if (appConfig.siteTitle) {
       document.title = appConfig.siteTitle;
@@ -466,6 +525,15 @@ export default function Home() {
     if (appConfig.siteDescription) {
       const metaDesc = document.querySelector('meta[name="description"]');
       if (metaDesc) metaDesc.setAttribute('content', appConfig.siteDescription);
+    }
+    if (appConfig.metaKeywords) {
+      let metaKw = document.querySelector('meta[name="keywords"]');
+      if (!metaKw) {
+        metaKw = document.createElement('meta');
+        metaKw.setAttribute('name', 'keywords');
+        document.head.appendChild(metaKw);
+      }
+      metaKw.setAttribute('content', appConfig.metaKeywords);
     }
     if (appConfig.faviconUrl) {
       let linkIcon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
@@ -476,7 +544,20 @@ export default function Home() {
       }
       linkIcon.setAttribute('href', appConfig.faviconUrl);
     }
-  }, [appConfig.siteTitle, appConfig.siteDescription, appConfig.faviconUrl]);
+    if (appConfig.appIconUrl) {
+      let appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
+      if (!appleIcon) {
+        appleIcon = document.createElement('link');
+        appleIcon.setAttribute('rel', 'apple-touch-icon');
+        document.head.appendChild(appleIcon);
+      }
+      appleIcon.setAttribute('href', appConfig.appIconUrl);
+    }
+    if (appConfig.ogImageUrl) {
+      const ogImg = document.querySelector('meta[property="og:image"]');
+      if (ogImg) ogImg.setAttribute('content', appConfig.ogImageUrl);
+    }
+  }, [appConfig.siteTitle, appConfig.siteDescription, appConfig.metaKeywords, appConfig.faviconUrl, appConfig.appIconUrl, appConfig.ogImageUrl]);
 
   const apk = appConfig.apk;
   const waNumber = appConfig.waNumber;
@@ -488,6 +569,10 @@ export default function Home() {
   const [phoneFilter, setPhoneFilter] = useState('Semua');
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showPopupModal, setShowPopupModal] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [footerLogoFailed, setFooterLogoFailed] = useState(false);
   const [activeInstallStep, setActiveInstallStep] = useState(0);
   const [completedInstallSteps, setCompletedInstallSteps] = useState<number[]>([]);
   const [legalModal, setLegalModal] = useState<{ open: boolean; title: string; content: string }>({
@@ -602,18 +687,36 @@ export default function Home() {
       />
 
       {/* Announcement Banner (Managed from Admin Dashboard) */}
-      {appConfig.bannerActive && appConfig.bannerText && (
+      {appConfig.bannerActive && !bannerDismissed && appConfig.bannerText && (
         <div className={`announcement-banner announcement-banner--${appConfig.bannerType || 'promo'}`}>
-          <div className="shell announcement-inner">
+          <div className="shell announcement-inner" style={{ position: 'relative' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
               <FontAwesomeIcon icon={faBullhorn} />
               {appConfig.bannerText}
             </span>
-            {appConfig.bannerLink && (
-              <a href={appConfig.bannerLink} className="announcement-link">
-                Lihat Detail <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
-              </a>
-            )}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+              {appConfig.bannerLink && (
+                <a href={appConfig.bannerLink} className="announcement-link">
+                  Lihat Detail <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setBannerDismissed(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  padding: '2px 6px',
+                  opacity: 0.8,
+                  fontSize: 14,
+                }}
+                aria-label="Tutup Pengumuman"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -622,10 +725,11 @@ export default function Home() {
       <header className="site-header">
         <div className="shell nav-wrap">
           <a className="brand" href="#beranda">
-            {appConfig.logoUrl ? (
+            {appConfig.logoUrl && !logoFailed ? (
               <img
                 src={appConfig.logoUrl}
                 alt={appConfig.appName}
+                onError={() => setLogoFailed(true)}
                 style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
               />
             ) : (
@@ -711,13 +815,17 @@ export default function Home() {
                 <FontAwesomeIcon icon={faCheck} style={{ marginRight: 5 }} />
                 {appConfig.heroAdFreeText || 'Bebas Iklan'}
               </span>
-              <span>•</span>
-              <span
-                onClick={() => setShowModal(true)}
-                style={{ textDecoration: 'underline', cursor: 'pointer', color: '#fff' }}
-              >
-                Panduan Pasang APK
-              </span>
+              {appConfig.securityModalActive && (
+                <>
+                  <span>•</span>
+                  <span
+                    onClick={() => setShowModal(true)}
+                    style={{ textDecoration: 'underline', cursor: 'pointer', color: '#fff' }}
+                  >
+                    Panduan Pasang APK
+                  </span>
+                </>
+              )}
             </div>
 
             <div className="trust-row">
@@ -920,13 +1028,15 @@ export default function Home() {
 
             <div className="install-actions">
               <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
-              <button
-                type="button"
-                onClick={() => setShowModal(true)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
-              >
-                Lihat Panduan Dialog Keamanan Android <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
-              </button>
+              {appConfig.securityModalActive && (
+                <button
+                  type="button"
+                  onClick={() => setShowModal(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
+                >
+                  Lihat Panduan Dialog Keamanan Android <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1103,10 +1213,11 @@ export default function Home() {
         <div className="shell footer-grid">
           <div>
             <a href="#beranda" className="brand">
-              {appConfig.logoUrl ? (
+              {(appConfig.footerLogoUrl || appConfig.logoUrl) && !footerLogoFailed ? (
                 <img
-                  src={appConfig.logoUrl}
+                  src={appConfig.footerLogoUrl || appConfig.logoUrl}
                   alt={appConfig.appName}
+                  onError={() => setFooterLogoFailed(true)}
                   style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
                 />
               ) : (
@@ -1195,8 +1306,81 @@ export default function Home() {
         <span>Bantuan WhatsApp</span>
       </a>
 
+      {/* Pop-up Modal Dialog (Promotional / Announcement Pop-up) */}
+      {appConfig.popupActive && showPopupModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            setShowPopupModal(false);
+            try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+          }}
+        >
+          <div
+            className="modal-box"
+            style={{ maxWidth: 480, textAlign: 'center', padding: '24px 20px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="modal-close"
+              onClick={() => {
+                setShowPopupModal(false);
+                try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+              }}
+              aria-label="Tutup Dialog"
+            >
+              <FontAwesomeIcon icon={faXmark} />
+            </button>
+            {appConfig.popupImageUrl && (
+              <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', maxHeight: 220 }}>
+                <img
+                  src={appConfig.popupImageUrl}
+                  alt={appConfig.popupTitle || 'Pop-up'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+            )}
+            {appConfig.popupTitle && (
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--burgundy, #6D0808)', marginBottom: 8 }}>
+                {appConfig.popupTitle}
+              </h3>
+            )}
+            {appConfig.popupContent && (
+              <p style={{ fontSize: 13, color: '#463a35', lineHeight: 1.6, marginBottom: 18, whiteSpace: 'pre-wrap' }}>
+                {appConfig.popupContent}
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              {appConfig.popupButtonLabel && appConfig.popupButtonUrl && (
+                <a
+                  className="download"
+                  href={appConfig.popupButtonUrl}
+                  target={appConfig.popupButtonUrl.startsWith('http') ? '_blank' : '_self'}
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    setShowPopupModal(false);
+                    try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+                  }}
+                >
+                  {appConfig.popupButtonLabel}
+                </a>
+              )}
+              <button
+                type="button"
+                className="download download--light"
+                onClick={() => {
+                  setShowPopupModal(false);
+                  try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+                }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Android Play Protect Modal */}
-      {showModal && (
+      {appConfig.securityModalActive && showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={() => setShowModal(false)} aria-label="Tutup">
