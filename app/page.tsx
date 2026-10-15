@@ -28,6 +28,7 @@ import {
   faEnvelope,
   faMapPin,
   faBullhorn,
+  faStar,
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faAndroid,
@@ -36,6 +37,8 @@ import {
   faInstagram,
   faFacebook,
   faTiktok,
+  faYoutube,
+  faLinkedin,
 } from '@fortawesome/free-brands-svg-icons';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
@@ -48,13 +51,35 @@ const publicApiUrl = (
 ).replace(/\/+$/, '');
 const repo = 'https://github.com/g-423/KosKita';
 
-const nav = [
-  ['#beranda', 'Beranda'],
-  ['#fitur', 'Fitur'],
-  ['#install', 'Cara Install'],
-  ['#pemilik', 'Untuk Pemilik Kost'],
-  ['#faq', 'FAQ'],
-];
+const ICON_MAP: Record<string, IconDefinition> = {
+  shield: faShieldHalved,
+  bolt: faBolt,
+  lock: faLock,
+  search: faSearch,
+  file: faFileLines,
+  'file-lines': faFileLines,
+  location: faLocationDot,
+  'location-dot': faLocationDot,
+  sliders: faSliders,
+  compass: faCompass,
+  sync: faArrowsRotate,
+  building: faBuilding,
+  download: faDownload,
+  heart: faHeart,
+  users: faUsers,
+  phone: faPhone,
+  envelope: faEnvelope,
+  mappin: faMapPin,
+  bullhorn: faBullhorn,
+  check: faCheck,
+  star: faStar,
+};
+
+function resolveFaIcon(name?: string, fallback: IconDefinition = faCheck): IconDefinition {
+  if (!name) return fallback;
+  const clean = name.toLowerCase().replace(/^(fa-|icon-)/, '');
+  return ICON_MAP[clean] || fallback;
+}
 
 const Button = ({ apk, light = false, label = 'Download APK' }: { apk: string; light?: boolean; label?: string }) => (
   <a className={`download ${light ? 'download--light' : ''}`} href={apk} download>
@@ -63,7 +88,64 @@ const Button = ({ apk, light = false, label = 'Download APK' }: { apk: string; l
   </a>
 );
 
-interface AppConfigState {
+export interface NavLinkItem {
+  id?: string;
+  label: string;
+  href?: string;
+  url?: string;
+  is_active?: boolean;
+  order?: number;
+}
+
+export interface TrustItem {
+  id?: string;
+  icon: string;
+  title: string;
+  desc: string;
+  is_active?: boolean;
+  order?: number;
+}
+
+export interface FeatureItem {
+  id?: string;
+  icon: string;
+  title: string;
+  desc: string;
+  is_active?: boolean;
+  order?: number;
+}
+
+export interface InstallStepItem {
+  id?: string;
+  step_number?: string;
+  n?: string;
+  title?: string;
+  t?: string;
+  desc?: string;
+  d?: string;
+  is_active?: boolean;
+  order?: number;
+}
+
+export interface OwnerStepItem {
+  id?: string;
+  title?: string;
+  text?: string;
+  is_active?: boolean;
+  order?: number;
+}
+
+export interface FaqItem {
+  id?: string;
+  question?: string;
+  q?: string;
+  answer?: string;
+  a?: string;
+  is_active?: boolean;
+  order?: number;
+}
+
+export interface AppConfigState {
   appName: string;
   tagline: string;
   heroText: string;
@@ -74,6 +156,7 @@ interface AppConfigState {
   address: string;
   siteTitle: string;
   siteDescription: string;
+  metaKeywords: string;
   targetCity: string;
   apkSize: string;
   minAndroid: string;
@@ -87,10 +170,51 @@ interface AppConfigState {
   bannerType: string;
   heroImageUrl: string;
   logoUrl: string;
+  faviconUrl: string;
+  ogImageUrl: string;
+  brandColor: string;
   githubUrl: string;
   instagram: string;
   facebook: string;
   tiktok: string;
+  youtube: string;
+  linkedin: string;
+  heroHeadline: string;
+  heroSubheadline: string;
+  heroCtaPrimaryLabel: string;
+  heroCtaSecondaryLabel: string;
+  heroCtaSecondaryLink: string;
+  heroAdFreeText: string;
+  heroTrustBadge1: string;
+  heroTrustBadge2: string;
+  heroTrustBadge3: string;
+  ownerTitle: string;
+  ownerIntro: string;
+  ownerWaLabel: string;
+  ownerSecondaryLabel: string;
+  aboutTitle: string;
+  aboutStory: string;
+  feedbackActive: boolean;
+  feedbackTitle: string;
+  feedbackDesc: string;
+  feedbackButtonLabel: string;
+  finalCtaEyebrow: string;
+  finalCtaTitle: string;
+  finalCtaDesc: string;
+  finalCtaButtonLabel: string;
+  footerTagline: string;
+  footerCopyright: string;
+  securityModalTitle: string;
+  securityModalDesc: string;
+  securityModalNote: string;
+  legalPrivacy: string;
+  legalTerms: string;
+  navLinks: NavLinkItem[];
+  trustItems: TrustItem[];
+  featureItems: FeatureItem[];
+  installSteps: InstallStepItem[];
+  ownerSteps: Array<OwnerStepItem | string>;
+  faqItems: FaqItem[];
 }
 
 interface PromoAd {
@@ -114,6 +238,7 @@ const defaultConfig: AppConfigState = {
   address: 'Jl. Soekarno Hatta No. 1, Pekanbaru, Riau',
   siteTitle: 'CariKostKita - Cari Kost Terpercaya di Pekanbaru',
   siteDescription: 'Platform pencarian kost terverifikasi dengan info harga, lokasi, dan fasilitas akurat.',
+  metaKeywords: 'cari kost pekanbaru, kost UIR, kost UNRI, kost Bukit Raya, APK CariKostKita',
   targetCity: 'Pekanbaru',
   apkSize: '6.9 MB',
   minAndroid: 'Android 8.0+',
@@ -127,10 +252,84 @@ const defaultConfig: AppConfigState = {
   bannerType: 'promo',
   heroImageUrl: '',
   logoUrl: '',
+  faviconUrl: '',
+  ogImageUrl: '',
+  brandColor: '#6D0808',
   githubUrl: 'https://github.com/g-423/KosKita',
   instagram: 'https://instagram.com/carikostkita',
   facebook: 'https://facebook.com/carikostkita',
   tiktok: 'https://tiktok.com/@carikostkita',
+  youtube: '',
+  linkedin: '',
+  heroHeadline: 'Temukan Kost Nyaman & Terpercaya di Pekanbaru',
+  heroSubheadline: 'CariKostKita hadir untuk memudahkan kamu menemukan kost terbaik di Pekanbaru. Dengan tampilan yang simpel, cepat, dan lengkap, semua kebutuhan kost ada di genggaman.',
+  heroCtaPrimaryLabel: 'Download APK',
+  heroCtaSecondaryLabel: 'Lihat Fitur',
+  heroCtaSecondaryLink: '#fitur',
+  heroAdFreeText: 'Bebas Iklan',
+  heroTrustBadge1: 'Mudah Digunakan',
+  heroTrustBadge2: 'Data Terpercaya',
+  heroTrustBadge3: 'Update Rutin',
+  ownerTitle: 'Anda punya kost di Pekanbaru?',
+  ownerIntro: 'Daftarkan kost Anda di CariKostKita agar lebih mudah ditemukan calon penyewa mahasiswa dan pekerja tanpa komisi perantara.',
+  ownerWaLabel: 'Daftar via WhatsApp',
+  ownerSecondaryLabel: 'Download Aplikasi',
+  aboutTitle: 'Dibangun untuk Kebutuhan Pencari Kost',
+  aboutStory: 'CariKostKita adalah aplikasi yang dikembangkan untuk membantu masyarakat, terutama anak rantau dan mahasiswa, dalam mencari kost dengan lebih mudah, cepat, dan terpercaya.',
+  feedbackActive: true,
+  feedbackTitle: 'Bantu kami menyempurnakan CariKostKita',
+  feedbackDesc: 'Menemukan bug atau punya usulan fitur untuk CariKostKita? Sampaikan masukan Anda langsung ke admin WhatsApp kami.',
+  feedbackButtonLabel: 'Kirim Masukan via WhatsApp',
+  finalCtaEyebrow: 'JANGAN TUNGGU LAGI!',
+  finalCtaTitle: 'Yuk, Temukan Kost Terbaikmu Sekarang!',
+  finalCtaDesc: 'Download CariKostKita sekarang dan mulai pencarian kost impianmu.',
+  finalCtaButtonLabel: 'Download APK Sekarang',
+  footerTagline: 'Kost terbaik, untuk masa depanmu.',
+  footerCopyright: '© 2026 CariKostKita. All rights reserved.',
+  securityModalTitle: 'Panduan Dialog Download Android',
+  securityModalDesc: 'Saat mengunduh berkas APK di luar Google Play Store, peramban (Chrome) akan menampilkan pesan standar keamanan:',
+  securityModalNote: 'Berkas APK CariKostKita 100% aman dan diverifikasi langsung dari repositori resmi proyek.',
+  legalPrivacy: 'Kebijakan Privasi CariKostKita: Kami menghargai privasi Anda dan hanya menggunakan data untuk keperluan operasional layanan pencarian kost.',
+  legalTerms: 'Syarat & Ketentuan CariKostKita: Layanan ini disediakan secara gratis untuk mempermudah pencarian kost di Pekanbaru.',
+  navLinks: [
+    { id: 'nav-1', label: 'Beranda', href: '#beranda', order: 1, is_active: true },
+    { id: 'nav-2', label: 'Fitur', href: '#fitur', order: 2, is_active: true },
+    { id: 'nav-3', label: 'Cara Install', href: '#install', order: 3, is_active: true },
+    { id: 'nav-4', label: 'Untuk Pemilik Kost', href: '#pemilik', order: 4, is_active: true },
+    { id: 'nav-5', label: 'FAQ', href: '#faq', order: 5, is_active: true },
+  ],
+  trustItems: [
+    { id: 'trust-1', icon: 'shield', title: 'Berkas resmi & terverifikasi', desc: 'Dirilis dari repositori resmi proyek tanpa adware atau pihak ketiga.', order: 1, is_active: true },
+    { id: 'trust-2', icon: 'bolt', title: 'Ringan & hemat kuota', desc: 'Ukuran berkas sangat ringkas agar cepat diunduh tanpa membebani memori ponsel.', order: 2, is_active: true },
+    { id: 'trust-3', icon: 'lock', title: 'Izin yang masuk akal', desc: 'Hanya izin lokasi untuk peta navigasi kost dan galeri foto bagi pemilik kost.', order: 3, is_active: true },
+  ],
+  featureItems: [
+    { id: 'feat-1', icon: 'search', title: 'Pencarian Mudah', desc: 'Temukan kost sesuai lokasi kampus, rentang harga, dan fasilitas yang kamu butuhkan.', order: 1, is_active: true },
+    { id: 'feat-2', icon: 'file', title: 'Informasi Lengkap', desc: 'Lihat detail kamar, foto asli terverifikasi, fasilitas lengkap, serta kontak langsung pemilik tanpa perantara.', order: 2, is_active: true },
+    { id: 'feat-3', icon: 'location', title: 'Lokasi Strategis', desc: 'Pilihan kost terverifikasi di area strategis yang dekat dengan kampus dan pusat aktivitas.', order: 3, is_active: true },
+    { id: 'feat-4', icon: 'sliders', title: 'Tampilan Sederhana', desc: 'Desain antarmuka bersih, ringan, dan sangat mudah digunakan oleh siapa saja.', order: 4, is_active: true },
+  ],
+  installSteps: [
+    { id: 'step-1', step_number: '1', title: 'Download APK', desc: 'Klik tombol unduh untuk mendapatkan berkas aplikasi resmi.', order: 1, is_active: true },
+    { id: 'step-2', step_number: '2', title: 'Konfirmasi Dialog', desc: 'Pilih "Tetap Download" jika muncul peringatan browser.', order: 2, is_active: true },
+    { id: 'step-3', step_number: '3', title: 'Izinkan Sumber', desc: 'Buka berkas unduhan dan aktifkan izin instalasi dari sumber ini.', order: 3, is_active: true },
+    { id: 'step-4', step_number: '4', title: 'Selesai!', desc: 'Buka aplikasi dan mulai mencari kost idamanmu.', order: 4, is_active: true },
+  ],
+  ownerSteps: [
+    { id: 'ostep-1', title: 'Unduh dan pasang aplikasi CariKostKita.', order: 1, is_active: true },
+    { id: 'ostep-2', title: 'Buka Profil, lalu pilih "Daftar sebagai Pemilik Kost".', order: 2, is_active: true },
+    { id: 'ostep-3', title: 'Isi identitas, alamat kost, fasilitas, dan foto kamar dengan lengkap.', order: 3, is_active: true },
+    { id: 'ostep-4', title: 'Tim verifikasi meninjau pengajuan Anda dalam kurun waktu 1x24 jam.', order: 4, is_active: true },
+    { id: 'ostep-5', title: 'Setelah disetujui, listing kost Anda langsung tayang dan dashboard pemilik dapat digunakan.', order: 5, is_active: true },
+  ],
+  faqItems: [
+    { id: 'faq-1', question: 'Mengapa aplikasi belum ada di Google Play Store?', answer: 'Aplikasi sedang dalam tahap pra-rilis publik. Berkas APK dibagikan langsung agar para pencari kost bisa langsung menikmati kemudahan mencari kost sebelum tersedia di Play Store.', order: 1, is_active: true },
+    { id: 'faq-2', question: 'Apakah aman menginstal file APK ini?', answer: 'Sangat aman. Berkas APK dikompilasi langsung dari repositori resmi proyek tanpa injeksi kode pihak ketiga. Android akan menampilkan dialog standar yang aman untuk disetujui.', order: 2, is_active: true },
+    { id: 'faq-3', question: 'Versi Android apa yang didukung?', answer: 'Mendukung Android 8.0+ hingga versi Android yang lebih baru dengan ukuran hemat kuota.', order: 3, is_active: true },
+    { id: 'faq-4', question: 'Apakah mencari kost dikenakan biaya?', answer: 'Tidak. Layanan pencarian kost 100% gratis untuk para pencari kost tanpa biaya langganan, biaya admin, maupun komisi perantara.', order: 4, is_active: true },
+    { id: 'faq-5', question: 'Bagaimana jika data kost tidak sesuai?', answer: 'Gunakan fitur lapor di aplikasi atau hubungi kami langsung via WhatsApp atau email bantuan. Tim verifikasi kami akan segera menindaklanjuti.', order: 5, is_active: true },
+    { id: 'faq-6', question: 'Apakah pemilik kost bisa langsung mengunggah?', answer: 'Bisa! Setiap pengajuan kost akan ditinjau oleh tim kurasi kami dalam 1x24 jam untuk mencegah penipuan dan memastikan listing valid.', order: 6, is_active: true },
+  ],
 };
 
 export default function Home() {
@@ -174,11 +373,17 @@ export default function Home() {
           setPromoAds(adsJson.data);
         }
 
+        const resolveArray = <T,>(camelArr: any, snakeArr: any, currentArr: T[]): T[] => {
+          if (Array.isArray(camelArr) && camelArr.length > 0) return camelArr;
+          if (Array.isArray(snakeArr) && snakeArr.length > 0) return snakeArr;
+          return currentArr;
+        };
+
         setAppConfig((current) => ({
           ...current,
           appName: full.appName || full.app_name || current.appName,
           tagline: full.tagline || current.tagline,
-          heroText: full.siteDescription || full.site_description || current.heroText,
+          heroText: full.heroSubheadline || full.hero_subheadline || full.siteDescription || full.site_description || current.heroText,
           versionName: full.versionName || full.version_name || current.versionName,
           releaseNotes: full.releaseNotes || full.release_notes || current.releaseNotes,
           supportEmail: full.supportEmail || full.support_email || current.supportEmail,
@@ -186,6 +391,7 @@ export default function Home() {
           address: full.address || full.office_address || current.address,
           siteTitle: full.siteTitle || full.site_title || current.siteTitle,
           siteDescription: full.siteDescription || full.site_description || current.siteDescription,
+          metaKeywords: full.metaKeywords || full.meta_keywords || current.metaKeywords,
           targetCity: full.targetCity || full.target_city || current.targetCity,
           apkSize: full.apkSize || full.apk_size || current.apkSize,
           minAndroid: full.minAndroid || full.min_android || current.minAndroid,
@@ -199,10 +405,51 @@ export default function Home() {
           bannerType: full.bannerType || full.banner_type || current.bannerType,
           heroImageUrl: full.heroImageUrl || full.hero_image_url || current.heroImageUrl,
           logoUrl: full.logoUrl || full.logo_url || current.logoUrl,
+          faviconUrl: full.faviconUrl || full.favicon_url || current.faviconUrl,
+          ogImageUrl: full.ogImageUrl || full.og_image_url || current.ogImageUrl,
+          brandColor: full.brandColor || full.brand_color || current.brandColor,
           githubUrl: full.githubUrl || full.github_url || current.githubUrl,
           instagram: full.instagram || current.instagram,
           facebook: full.facebook || current.facebook,
           tiktok: full.tiktok || current.tiktok,
+          youtube: full.youtube || current.youtube,
+          linkedin: full.linkedin || current.linkedin,
+          heroHeadline: full.heroHeadline || full.hero_headline || full.tagline || current.heroHeadline,
+          heroSubheadline: full.heroSubheadline || full.hero_subheadline || current.heroSubheadline,
+          heroCtaPrimaryLabel: full.heroCtaPrimaryLabel || full.hero_cta_primary_label || current.heroCtaPrimaryLabel,
+          heroCtaSecondaryLabel: full.heroCtaSecondaryLabel || full.hero_cta_secondary_label || current.heroCtaSecondaryLabel,
+          heroCtaSecondaryLink: full.heroCtaSecondaryLink || full.hero_cta_secondary_link || current.heroCtaSecondaryLink,
+          heroAdFreeText: full.heroAdFreeText || full.hero_ad_free_text || current.heroAdFreeText,
+          heroTrustBadge1: full.heroTrustBadge1 || full.hero_trust_badge_1 || current.heroTrustBadge1,
+          heroTrustBadge2: full.heroTrustBadge2 || full.hero_trust_badge_2 || current.heroTrustBadge2,
+          heroTrustBadge3: full.heroTrustBadge3 || full.hero_trust_badge_3 || current.heroTrustBadge3,
+          ownerTitle: full.ownerTitle || full.owner_title || current.ownerTitle,
+          ownerIntro: full.ownerIntro || full.owner_intro || current.ownerIntro,
+          ownerWaLabel: full.ownerWaLabel || full.owner_wa_label || current.ownerWaLabel,
+          ownerSecondaryLabel: full.ownerSecondaryLabel || full.owner_secondary_label || current.ownerSecondaryLabel,
+          aboutTitle: full.aboutTitle || full.about_title || current.aboutTitle,
+          aboutStory: full.aboutStory || full.about_story || current.aboutStory,
+          feedbackActive: full.feedbackActive !== undefined ? Boolean(full.feedbackActive) : full.feedback_active !== undefined ? Boolean(full.feedback_active) : current.feedbackActive,
+          feedbackTitle: full.feedbackTitle || full.feedback_title || current.feedbackTitle,
+          feedbackDesc: full.feedbackDesc || full.feedback_desc || current.feedbackDesc,
+          feedbackButtonLabel: full.feedbackButtonLabel || full.feedback_button_label || current.feedbackButtonLabel,
+          finalCtaEyebrow: full.finalCtaEyebrow || full.final_cta_eyebrow || current.finalCtaEyebrow,
+          finalCtaTitle: full.finalCtaTitle || full.final_cta_title || current.finalCtaTitle,
+          finalCtaDesc: full.finalCtaDesc || full.final_cta_desc || current.finalCtaDesc,
+          finalCtaButtonLabel: full.finalCtaButtonLabel || full.final_cta_button_label || current.finalCtaButtonLabel,
+          footerTagline: full.footerTagline || full.footer_tagline || current.footerTagline,
+          footerCopyright: full.footerCopyright || full.footer_copyright || current.footerCopyright,
+          securityModalTitle: full.securityModalTitle || full.security_modal_title || current.securityModalTitle,
+          securityModalDesc: full.securityModalDesc || full.security_modal_desc || current.securityModalDesc,
+          securityModalNote: full.securityModalNote || full.security_modal_note || current.securityModalNote,
+          legalPrivacy: full.legalPrivacy || full.legal_privacy || current.legalPrivacy,
+          legalTerms: full.legalTerms || full.legal_terms || current.legalTerms,
+          navLinks: resolveArray(full.navLinks, full.nav_links, current.navLinks),
+          trustItems: resolveArray(full.trustItems, full.trust_items, current.trustItems),
+          featureItems: resolveArray(full.featureItems, full.feature_items, current.featureItems),
+          installSteps: resolveArray(full.installSteps, full.install_steps, current.installSteps),
+          ownerSteps: resolveArray(full.ownerSteps, full.owner_steps, current.ownerSteps),
+          faqItems: resolveArray(full.faqItems, full.faq_items, current.faqItems),
         }));
       } catch (e) {
         console.error('Failed to fetch dynamic settings', e);
@@ -210,6 +457,26 @@ export default function Home() {
     }
     fetchConfig();
   }, []);
+
+  // Realtime client-side sync of document title, description, and favicon
+  useEffect(() => {
+    if (appConfig.siteTitle) {
+      document.title = appConfig.siteTitle;
+    }
+    if (appConfig.siteDescription) {
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute('content', appConfig.siteDescription);
+    }
+    if (appConfig.faviconUrl) {
+      let linkIcon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+      if (!linkIcon) {
+        linkIcon = document.createElement('link');
+        linkIcon.setAttribute('rel', 'icon');
+        document.head.appendChild(linkIcon);
+      }
+      linkIcon.setAttribute('href', appConfig.faviconUrl);
+    }
+  }, [appConfig.siteTitle, appConfig.siteDescription, appConfig.faviconUrl]);
 
   const apk = appConfig.apk;
   const waNumber = appConfig.waNumber;
@@ -223,6 +490,11 @@ export default function Home() {
   const [showModal, setShowModal] = useState(false);
   const [activeInstallStep, setActiveInstallStep] = useState(0);
   const [completedInstallSteps, setCompletedInstallSteps] = useState<number[]>([]);
+  const [legalModal, setLegalModal] = useState<{ open: boolean; title: string; content: string }>({
+    open: false,
+    title: '',
+    content: '',
+  });
 
   const handleInstallStepClick = (stepIndex: number) => {
     if (stepIndex === 3) {
@@ -240,7 +512,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Scroll Progress
     const onScroll = () => {
       const totalScroll = document.documentElement.scrollTop;
       const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
@@ -250,7 +521,6 @@ export default function Home() {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
 
-    // Scroll Reveal Animation (Intersection Observer)
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -271,95 +541,59 @@ export default function Home() {
     };
   }, []);
 
+  // Filtered & mapped navigation links
+  const activeNavLinks = (appConfig.navLinks || [])
+    .filter((item) => item.is_active !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((item) => ({
+      href: item.href || item.url || '#',
+      label: item.label,
+    }));
+
   // Dynamic Trust Items derived from appConfig
-  const trust: Array<{ icon: IconDefinition; title: string; desc: string }> = [
-    {
-      icon: faShieldHalved,
-      title: 'Berkas resmi & terverifikasi',
-      desc: `Dirilis dari repositori resmi proyek ${appConfig.appName} tanpa adware atau pihak ketiga.`,
-    },
-    {
-      icon: faBolt,
-      title: 'Ringan & hemat kuota',
-      desc: `Ukuran berkas hanya ${appConfig.apkSize} agar sangat cepat diunduh tanpa membebani memori ponsel.`,
-    },
-    {
-      icon: faLock,
-      title: 'Izin yang masuk akal',
-      desc: `Hanya izin lokasi untuk peta navigasi kost di ${appConfig.targetCity} dan galeri foto bagi pemilik kost.`,
-    },
-  ];
+  const activeTrust = (appConfig.trustItems || [])
+    .filter((item) => item.is_active !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((item) => ({
+      icon: resolveFaIcon(item.icon, faShieldHalved),
+      title: item.title,
+      desc: item.desc,
+    }));
 
   // Dynamic Features derived from appConfig
-  const features: Array<{ icon: IconDefinition; title: string; desc: string }> = [
-    {
-      icon: faSearch,
-      title: 'Pencarian Mudah',
-      desc: `Temukan kost sesuai lokasi kampus, rentang harga, dan fasilitas yang kamu butuhkan di ${appConfig.targetCity}.`,
-    },
-    {
-      icon: faFileLines,
-      title: 'Informasi Lengkap',
-      desc: 'Lihat detail kamar, foto asli terverifikasi, fasilitas lengkap, serta kontak langsung pemilik tanpa perantara.',
-    },
-    {
-      icon: faLocationDot,
-      title: 'Lokasi Strategis',
-      desc: `Pilihan kost terverifikasi di area strategis ${appConfig.targetCity} yang dekat dengan kampus dan pusat aktivitas.`,
-    },
-    {
-      icon: faSliders,
-      title: 'Tampilan Sederhana',
-      desc: `Desain antarmuka ${appConfig.appName} yang bersih, ringan, dan sangat mudah digunakan oleh siapa saja.`,
-    },
-  ];
-
-  // Dynamic FAQs derived from appConfig
-  const faqs: Array<[string, string]> = [
-    [
-      `Mengapa aplikasi ${appConfig.appName} belum ada di Google Play Store?`,
-      `${appConfig.appName} versi ${appConfig.versionName} sedang dalam tahap pra-rilis publik. Berkas APK dibagikan langsung agar para pencari kost di ${appConfig.targetCity} bisa langsung menikmati kemudahan mencari kost sebelum tersedia di Play Store.`,
-    ],
-    [
-      'Apakah aman menginstal file APK ini?',
-      `Sangat aman. Berkas APK ${appConfig.appName} dikompilasi langsung dari repositori resmi proyek tanpa injeksi kode pihak ketiga. Android akan menampilkan dialog standar ("Tetap Download") yang aman untuk disetujui.`,
-    ],
-    [
-      'Versi Android apa yang didukung?',
-      `${appConfig.appName} mendukung ${appConfig.minAndroid} hingga versi Android yang lebih baru dengan ukuran hemat kuota (${appConfig.apkSize}).`,
-    ],
-    [
-      'Apakah mencari kost dikenakan biaya?',
-      `Tidak. Layanan pencarian kost di ${appConfig.appName} 100% gratis untuk para pencari kost tanpa biaya langganan, biaya admin, maupun komisi perantara.`,
-    ],
-    [
-      'Bagaimana jika data kost tidak sesuai?',
-      `Gunakan fitur lapor di aplikasi atau hubungi kami langsung via WhatsApp di ${appConfig.waNumber} atau email ${appConfig.supportEmail}. Tim verifikasi kami akan segera menindaklanjuti.`,
-    ],
-    [
-      `Apakah pemilik kost di ${appConfig.targetCity} bisa langsung mengunggah?`,
-      `Bisa! Setiap pengajuan kost akan ditinjau oleh tim kurasi kami dalam 1x24 jam untuk mencegah penipuan dan memastikan listing valid.`,
-    ],
-    ...(appConfig.releaseNotes
-      ? [
-          [
-            `Apa pembaruan terbaru di versi ${appConfig.versionName}?`,
-            appConfig.releaseNotes,
-          ] as [string, string],
-        ]
-      : []),
-  ];
+  const activeFeatures = (appConfig.featureItems || [])
+    .filter((item) => item.is_active !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((item) => ({
+      icon: resolveFaIcon(item.icon, faSearch),
+      title: item.title,
+      desc: item.desc,
+    }));
 
   // Dynamic Install Steps
-  const installSteps = [
-    { n: '1', t: 'Download APK', d: `Klik tombol unduh untuk mendapatkan berkas ${appConfig.appName} (${appConfig.apkSize}) resmi.` },
-    { n: '2', t: 'Konfirmasi Dialog', d: 'Pilih "Tetap Download" jika muncul peringatan browser.' },
-    { n: '3', t: 'Izinkan Sumber', d: 'Buka berkas unduhan dan aktifkan izin instalasi dari sumber ini.' },
-    { n: '4', t: 'Selesai!', d: `Buka aplikasi ${appConfig.appName} dan mulai mencari kost idamanmu di ${appConfig.targetCity}.` },
-  ];
+  const activeInstallSteps = (appConfig.installSteps || [])
+    .filter((item) => item.is_active !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((item, idx) => ({
+      n: item.step_number || item.n || String(idx + 1),
+      t: item.title || item.t || `Langkah ${idx + 1}`,
+      d: item.desc || item.d || '',
+    }));
+
+  // Dynamic Owner Steps
+  const activeOwnerSteps = (appConfig.ownerSteps || [])
+    .filter((item: any) => typeof item === 'string' || item.is_active !== false)
+    .sort((a: any, b: any) => ((typeof a === 'object' && a?.order) || 0) - ((typeof b === 'object' && b?.order) || 0))
+    .map((item: any) => (typeof item === 'string' ? item : item.title || item.text || ''));
+
+  // Dynamic FAQs derived from appConfig
+  const activeFaqs = (appConfig.faqItems || [])
+    .filter((item) => item.is_active !== false)
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((item) => [item.question || item.q || '', item.answer || item.a || ''] as [string, string]);
 
   return (
-    <main>
+    <main style={{ '--burgundy': appConfig.brandColor || '#6D0808' } as React.CSSProperties}>
       {/* Scroll Progress Bar */}
       <div
         className="scroll-progress"
@@ -403,15 +637,15 @@ export default function Home() {
           </a>
 
           <nav className="nav-links">
-            {nav.map(([h, l], i) => (
-              <a className={i === 0 ? 'active' : ''} href={h} key={h}>
-                {l}
+            {activeNavLinks.map((item, i) => (
+              <a className={i === 0 ? 'active' : ''} href={item.href} key={item.href + i}>
+                {item.label}
               </a>
             ))}
           </nav>
 
           <div className="nav-download">
-            <Button apk={apk} />
+            <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
           </div>
 
           <button
@@ -425,12 +659,12 @@ export default function Home() {
 
         {menu && (
           <nav className="mobile-menu">
-            {nav.map(([h, l]) => (
-              <a href={h} key={h} onClick={() => setMenu(false)}>
-                {l}
+            {activeNavLinks.map((item, i) => (
+              <a href={item.href} key={item.href + i} onClick={() => setMenu(false)}>
+                {item.label}
               </a>
             ))}
-            <Button apk={apk} />
+            <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
           </nav>
         )}
       </header>
@@ -443,16 +677,16 @@ export default function Home() {
           <div className="hero__copy">
             <p className="eyebrow eyebrow--light">{appConfig.appName.toUpperCase()} • {appConfig.targetCity.toUpperCase()}</p>
             <h1>
-              {appConfig.tagline || `Temukan Kost Impianmu di ${appConfig.targetCity}`}
+              {appConfig.heroHeadline || appConfig.tagline || `Temukan Kost Impianmu di ${appConfig.targetCity}`}
             </h1>
             <p className="hero__text">
-              {appConfig.heroText}
+              {appConfig.heroSubheadline || appConfig.heroText}
             </p>
 
             <div className="hero__actions">
-              <Button apk={apk} />
-              <a className="outline-button" href="#fitur">
-                Lihat Fitur <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 6 }} />
+              <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
+              <a className="outline-button" href={appConfig.heroCtaSecondaryLink || '#fitur'}>
+                {appConfig.heroCtaSecondaryLabel || 'Lihat Fitur'} <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 6 }} />
               </a>
             </div>
 
@@ -475,7 +709,7 @@ export default function Home() {
               <span>•</span>
               <span>
                 <FontAwesomeIcon icon={faCheck} style={{ marginRight: 5 }} />
-                Bebas Iklan
+                {appConfig.heroAdFreeText || 'Bebas Iklan'}
               </span>
               <span>•</span>
               <span
@@ -489,15 +723,15 @@ export default function Home() {
             <div className="trust-row">
               <span>
                 <FontAwesomeIcon icon={faShieldHalved} style={{ marginRight: 4 }} />
-                Mudah Digunakan
+                {appConfig.heroTrustBadge1 || 'Mudah Digunakan'}
               </span>
               <span>
                 <FontAwesomeIcon icon={faCompass} style={{ marginRight: 4 }} />
-                Data Terpercaya
+                {appConfig.heroTrustBadge2 || 'Data Terpercaya'}
               </span>
               <span>
                 <FontAwesomeIcon icon={faArrowsRotate} style={{ marginRight: 4 }} />
-                Update Rutin
+                {appConfig.heroTrustBadge3 || 'Update Rutin'}
               </span>
             </div>
           </div>
@@ -599,7 +833,7 @@ export default function Home() {
           <p className="intro">Kenali manfaat dan informasi penting sebelum mencoba aplikasi kami.</p>
 
           <div className="trust-grid">
-            {trust.map((item) => (
+            {activeTrust.map((item) => (
               <article className="trust-card reveal-on-scroll" key={item.title}>
                 <span className="icon-badge">
                   <FontAwesomeIcon icon={item.icon} />
@@ -622,7 +856,7 @@ export default function Home() {
           <p className="intro">Pengalaman mencari kost di {appConfig.targetCity} yang sederhana, lengkap, dan mudah diandalkan.</p>
 
           <div className="feature-grid">
-            {features.map((item) => (
+            {activeFeatures.map((item) => (
               <article className="feature-card reveal-on-scroll" key={item.title}>
                 <span className="icon-badge">
                   <FontAwesomeIcon icon={item.icon} />
@@ -644,7 +878,7 @@ export default function Home() {
               <img
                 src={`/mockup-install-${activeInstallStep + 1}.png`}
                 alt={`Simulasi Instalasi Langkah ${activeInstallStep + 1}: ${
-                  ['Download Berkas APK', 'Konfirmasi Dialog Keamanan', 'Izin Sumber Tidak Dikenal', 'Instalasi Selesai'][activeInstallStep]
+                  ['Download Berkas APK', 'Konfirmasi Dialog Keamanan', 'Izin Sumber Tidak Dikenal', 'Instalasi Selesai'][activeInstallStep] || 'Langkah Instalasi'
                 }`}
                 className="install-3d-img"
               />
@@ -655,15 +889,15 @@ export default function Home() {
             <p className="eyebrow">CARA INSTALL</p>
             <h2>Mudah Instal, Langsung Pakai</h2>
             <p className="intro">
-              Ikuti 4 langkah berikut untuk menginstal aplikasi {appConfig.appName} di perangkat Android kamu ({appConfig.minAndroid}). Klik tiap langkah untuk melihat simulasi layar di samping.
+              Ikuti langkah berikut untuk menginstal aplikasi {appConfig.appName} di perangkat Android kamu ({appConfig.minAndroid}). Klik tiap langkah untuk melihat simulasi layar di samping.
             </p>
 
             <div className="steps">
-              {installSteps.map((stepItem, idx) => (
+              {activeInstallSteps.map((stepItem, idx) => (
                 <button
                   type="button"
                   className={`step install-step-card ${activeInstallStep === idx ? 'active' : ''} ${completedInstallSteps.includes(idx) ? 'is-complete' : ''}`}
-                  key={stepItem.n}
+                  key={stepItem.n + idx}
                   onClick={() => handleInstallStepClick(idx)}
                   disabled={completedInstallSteps.includes(idx)}
                   aria-label={`${stepItem.t}${completedInstallSteps.includes(idx) ? ' (sudah dipilih)' : ''}`}
@@ -673,7 +907,7 @@ export default function Home() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
                       <h3>{stepItem.t}</h3>
                       {activeInstallStep === idx && (
-                        <small style={{ fontSize: 8, color: '#6D0808', fontWeight: 700, background: '#f5e8e8', padding: '1px 5px', borderRadius: 4 }}>
+                        <small style={{ fontSize: 8, color: 'var(--burgundy, #6D0808)', fontWeight: 700, background: '#f5e8e8', padding: '1px 5px', borderRadius: 4 }}>
                           Aktif
                         </small>
                       )}
@@ -685,11 +919,11 @@ export default function Home() {
             </div>
 
             <div className="install-actions">
-              <Button apk={apk} />
+              <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
               <button
                 type="button"
                 onClick={() => setShowModal(true)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6D0808', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
               >
                 Lihat Panduan Dialog Keamanan Android <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
               </button>
@@ -703,9 +937,9 @@ export default function Home() {
         <div className="shell owner-layout">
           <div>
             <p className="eyebrow">KHUSUS PEMILIK KOST</p>
-            <h2>Anda punya kost di {appConfig.targetCity}?</h2>
+            <h2>{appConfig.ownerTitle || `Anda punya kost di ${appConfig.targetCity}?`}</h2>
             <p className="intro">
-              Daftarkan kost Anda di {appConfig.appName} agar lebih mudah ditemukan calon penyewa mahasiswa dan pekerja di {appConfig.targetCity} tanpa komisi perantara.
+              {appConfig.ownerIntro || `Daftarkan kost Anda di ${appConfig.appName} agar lebih mudah ditemukan calon penyewa mahasiswa dan pekerja di ${appConfig.targetCity} tanpa komisi perantara.`}
             </p>
             <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <a
@@ -716,21 +950,15 @@ export default function Home() {
                 rel="noopener noreferrer"
               >
                 <FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: 6 }} />
-                <span>Daftar via WhatsApp</span>
+                <span>{appConfig.ownerWaLabel || 'Daftar via WhatsApp'}</span>
               </a>
-              <Button apk={apk} light label="Download Aplikasi" />
+              <Button apk={apk} light label={appConfig.ownerSecondaryLabel || 'Download Aplikasi'} />
             </div>
           </div>
 
           <ol>
-            {[
-              `Unduh dan pasang aplikasi ${appConfig.appName}.`,
-              'Buka Profil, lalu pilih "Daftar sebagai Pemilik Kost".',
-              `Isi identitas, alamat kost di ${appConfig.targetCity}, fasilitas, dan foto kamar dengan lengkap.`,
-              `Tim verifikasi ${appConfig.appName} meninjau pengajuan Anda dalam kurun waktu 1x24 jam.`,
-              'Setelah disetujui, listing kost Anda langsung tayang dan dashboard pemilik dapat digunakan.',
-            ].map((x, i) => (
-              <li key={x}>
+            {activeOwnerSteps.map((x, i) => (
+              <li key={i}>
                 <span>{i + 1}</span>
                 {x}
               </li>
@@ -748,28 +976,28 @@ export default function Home() {
             </div>
             <div>
               <p className="eyebrow">TENTANG KAMI</p>
-              <h2>Dibangun untuk Kebutuhan Pencari Kost {appConfig.targetCity}</h2>
+              <h2>{appConfig.aboutTitle || `Dibangun untuk Kebutuhan Pencari Kost ${appConfig.targetCity}`}</h2>
               <p>
-                {appConfig.appName} adalah aplikasi yang dikembangkan untuk membantu masyarakat, terutama anak rantau dan mahasiswa, dalam mencari kost di {appConfig.targetCity} dengan lebih mudah, cepat, dan terpercaya.
+                {appConfig.aboutStory || `${appConfig.appName} adalah aplikasi yang dikembangkan untuk membantu masyarakat, terutama anak rantau dan mahasiswa, dalam mencari kost di ${appConfig.targetCity} dengan lebih mudah, cepat, dan terpercaya.`}
               </p>
 
               {/* Dynamic Company/Contact Info */}
               <div style={{ marginTop: 14, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 6, color: '#52433e' }}>
                 {appConfig.address && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faMapPin} style={{ color: '#6D0808', width: 14 }} />
+                    <FontAwesomeIcon icon={faMapPin} style={{ color: 'var(--burgundy, #6D0808)', width: 14 }} />
                     <span>{appConfig.address}</span>
                   </div>
                 )}
                 {appConfig.contactPhone && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faPhone} style={{ color: '#6D0808', width: 14 }} />
+                    <FontAwesomeIcon icon={faPhone} style={{ color: 'var(--burgundy, #6D0808)', width: 14 }} />
                     <span>{appConfig.contactPhone}</span>
                   </div>
                 )}
                 {appConfig.supportEmail && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faEnvelope} style={{ color: '#6D0808', width: 14 }} />
+                    <FontAwesomeIcon icon={faEnvelope} style={{ color: 'var(--burgundy, #6D0808)', width: 14 }} />
                     <span>{appConfig.supportEmail}</span>
                   </div>
                 )}
@@ -797,6 +1025,16 @@ export default function Home() {
                     <FontAwesomeIcon icon={faTiktok} /> TikTok
                   </a>
                 )}
+                {appConfig.youtube && (
+                  <a href={appConfig.youtube} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FF0000' }}>
+                    <FontAwesomeIcon icon={faYoutube} /> YouTube
+                  </a>
+                )}
+                {appConfig.linkedin && (
+                  <a href={appConfig.linkedin} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0A66C2' }}>
+                    <FontAwesomeIcon icon={faLinkedin} /> LinkedIn
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -804,8 +1042,8 @@ export default function Home() {
           <div id="faq" className="faq">
             <p className="eyebrow">FAQ</p>
             <h2>Pertanyaan yang Sering Diajukan</h2>
-            {faqs.map(([q, a], i) => (
-              <div className="faq-item" key={q}>
+            {activeFaqs.map(([q, a], i) => (
+              <div className="faq-item" key={q + i}>
                 <button
                   type="button"
                   onClick={() => setOpen(open === i ? null : i)}
@@ -824,37 +1062,39 @@ export default function Home() {
       </section>
 
       {/* Feedback Section with Scroll Animation */}
-      <section className="feedback reveal-on-scroll">
-        <div className="shell">
-          <p className="eyebrow">UJI COBA & MASUKAN</p>
-          <h2>Bantu kami menyempurnakan {appConfig.appName}</h2>
-          <p>
-            Menemukan bug atau punya usulan fitur untuk {appConfig.appName}? Sampaikan masukan Anda langsung ke admin WhatsApp kami.
-          </p>
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 22 }}>
-            <a
-              className="download"
-              style={{ background: '#25D366' }}
-              href={waHelpUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: 6 }} />
-              <span>Kirim Masukan via WhatsApp</span>
-            </a>
+      {appConfig.feedbackActive !== false && (
+        <section className="feedback reveal-on-scroll">
+          <div className="shell">
+            <p className="eyebrow">UJI COBA & MASUKAN</p>
+            <h2>{appConfig.feedbackTitle || `Bantu kami menyempurnakan ${appConfig.appName}`}</h2>
+            <p>
+              {appConfig.feedbackDesc || `Menemukan bug atau punya usulan fitur untuk ${appConfig.appName}? Sampaikan masukan Anda langsung ke admin WhatsApp kami.`}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 22 }}>
+              <a
+                className="download"
+                style={{ background: '#25D366' }}
+                href={waHelpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: 6 }} />
+                <span>{appConfig.feedbackButtonLabel || 'Kirim Masukan via WhatsApp'}</span>
+              </a>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Final CTA */}
       <section className="final-cta reveal-on-scroll">
         <div className="shell final-cta__inner">
           <div>
-            <p className="eyebrow eyebrow--light">JANGAN TUNGGU LAGI!</p>
-            <h2>Yuk, Temukan Kost Terbaikmu Sekarang!</h2>
-            <p>Download {appConfig.appName} sekarang dan mulai pencarian kost impianmu di {appConfig.targetCity}.</p>
+            <p className="eyebrow eyebrow--light">{appConfig.finalCtaEyebrow || 'JANGAN TUNGGU LAGI!'}</p>
+            <h2>{appConfig.finalCtaTitle || 'Yuk, Temukan Kost Terbaikmu Sekarang!'}</h2>
+            <p>{appConfig.finalCtaDesc || `Download ${appConfig.appName} sekarang dan mulai pencarian kost impianmu di ${appConfig.targetCity}.`}</p>
           </div>
-          <Button apk={apk} light />
+          <Button apk={apk} light label={appConfig.finalCtaButtonLabel || 'Download APK Sekarang'} />
         </div>
       </section>
 
@@ -876,14 +1116,32 @@ export default function Home() {
               )}
               {appConfig.appName}
             </a>
-            <p>{appConfig.tagline || `Kost terbaik, untuk masa depanmu di ${appConfig.targetCity}.`}</p>
+            <p>{appConfig.footerTagline || appConfig.tagline || `Kost terbaik, untuk masa depanmu di ${appConfig.targetCity}.`}</p>
             {appConfig.address && <p style={{ fontSize: 11, marginTop: 4, opacity: 0.8 }}>{appConfig.address}</p>}
+
+            <div style={{ display: 'flex', gap: 14, fontSize: 11, marginTop: 12, opacity: 0.85 }}>
+              <button
+                type="button"
+                onClick={() => setLegalModal({ open: true, title: 'Kebijakan Privasi', content: appConfig.legalPrivacy })}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Kebijakan Privasi
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => setLegalModal({ open: true, title: 'Syarat & Ketentuan', content: appConfig.legalTerms })}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Syarat & Ketentuan
+              </button>
+            </div>
           </div>
 
           <nav>
-            {nav.map(([h, l]) => (
-              <a href={h} key={h}>
-                {l}
+            {activeNavLinks.map((item, i) => (
+              <a href={item.href} key={item.href + i}>
+                {item.label}
               </a>
             ))}
           </nav>
@@ -910,9 +1168,19 @@ export default function Home() {
                 <FontAwesomeIcon icon={faTiktok} size="lg" />
               </a>
             )}
+            {appConfig.youtube && (
+              <a href={appConfig.youtube} target="_blank" rel="noopener noreferrer" title="YouTube" style={{ color: '#FF0000' }}>
+                <FontAwesomeIcon icon={faYoutube} size="lg" />
+              </a>
+            )}
+            {appConfig.linkedin && (
+              <a href={appConfig.linkedin} target="_blank" rel="noopener noreferrer" title="LinkedIn" style={{ color: '#0A66C2' }}>
+                <FontAwesomeIcon icon={faLinkedin} size="lg" />
+              </a>
+            )}
           </div>
         </div>
-        <div className="shell copyright">© 2026 {appConfig.appName}. All rights reserved.</div>
+        <div className="shell copyright">{appConfig.footerCopyright || `© 2026 ${appConfig.appName}. All rights reserved.`}</div>
       </footer>
 
       {/* Floating WhatsApp Quick Action */}
@@ -934,12 +1202,12 @@ export default function Home() {
             <button className="modal-close" onClick={() => setShowModal(false)} aria-label="Tutup">
               <FontAwesomeIcon icon={faXmark} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#6D0808', fontWeight: 700, fontSize: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 16 }}>
               <FontAwesomeIcon icon={faTriangleExclamation} color="#D97706" />
-              <span>Panduan Dialog Download Android</span>
+              <span>{appConfig.securityModalTitle || 'Panduan Dialog Download Android'}</span>
             </div>
             <p style={{ fontSize: 12, color: '#655955', marginTop: 10, lineHeight: 1.6 }}>
-              Saat mengunduh berkas APK di luar Google Play Store, peramban (Chrome) akan menampilkan pesan standar keamanan:
+              {appConfig.securityModalDesc || 'Saat mengunduh berkas APK di luar Google Play Store, peramban (Chrome) akan menampilkan pesan standar keamanan:'}
             </p>
             <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '12px 14px', borderRadius: 8, fontSize: 12, marginTop: 10, color: '#92400E', lineHeight: 1.6 }}>
               <b>Langkah Mudah:</b>
@@ -953,12 +1221,40 @@ export default function Home() {
               4. Klik <b>&quot;Instal&quot;</b> dan aplikasi siap digunakan!
             </div>
             <p style={{ fontSize: 11, color: '#8A7F79', marginTop: 10 }}>
-              Berkas APK {appConfig.appName} ({appConfig.versionName}) 100% aman dan diverifikasi langsung dari repositori resmi proyek.
+              {appConfig.securityModalNote || `Berkas APK ${appConfig.appName} (${appConfig.versionName}) 100% aman dan diverifikasi langsung dari repositori resmi proyek.`}
             </p>
             <div style={{ marginTop: 18, textAlign: 'right' }}>
               <a className="download" href={apk} onClick={() => setShowModal(false)}>
                 Lanjut Download APK
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legal Information Modal (Privacy Policy & Terms of Service) */}
+      {legalModal.open && (
+        <div className="modal-overlay" onClick={() => setLegalModal({ open: false, title: '', content: '' })}>
+          <div className="modal-box" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setLegalModal({ open: false, title: '', content: '' })} aria-label="Tutup">
+              <FontAwesomeIcon icon={faXmark} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 16 }}>
+              <FontAwesomeIcon icon={faFileLines} />
+              <span>{legalModal.title}</span>
+            </div>
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', marginTop: 14, fontSize: 13, lineHeight: 1.7, color: '#463a35', whiteSpace: 'pre-wrap', paddingRight: 6 }}>
+              {legalModal.content || 'Konten belum diisi.'}
+            </div>
+            <div style={{ marginTop: 18, textAlign: 'right' }}>
+              <button
+                type="button"
+                className="download"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setLegalModal({ open: false, title: '', content: '' })}
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>

@@ -72,12 +72,13 @@ export async function GET() {
     contactPhone: '0761-555-0123',
     address: 'Jl. Soekarno Hatta No. 1, Pekanbaru, Riau',
     siteTitle: 'CariKostKita - Cari Kost Terpercaya di Pekanbaru',
+    metaKeywords: 'cari kost pekanbaru, kost UIR, kost UNRI, kost Bukit Raya, APK CariKostKita',
     targetCity: 'Pekanbaru',
     apkSize: '6.9 MB',
     minAndroid: 'Android 8.0+',
     heroBadge1: 'Lokasi dekat kampus & area strategis',
     heroBadge2: 'Detail kost & foto kamar lengkap',
-    apkUrl: 'https://github.com/g-423/KosKita/releases/download/v1.0.0-beta/CariKostKita-v1.0.0-beta.apk',
+    apkUrl: '/releases/CariKostKita-v1.0.1.apk',
     whatsapp: '6281270008899',
     bannerActive: false,
     bannerText: '',
@@ -85,10 +86,83 @@ export async function GET() {
     bannerType: 'promo',
     heroImageUrl: '',
     logoUrl: '',
+    faviconUrl: '',
+    ogImageUrl: '',
+    brandColor: '#6D0808',
     githubUrl: 'https://github.com/g-423/KosKita',
     instagram: 'https://instagram.com/carikostkita',
     facebook: 'https://facebook.com/carikostkita',
     tiktok: 'https://tiktok.com/@carikostkita',
+    youtube: '',
+    linkedin: '',
+    heroHeadline: 'Temukan Kost Nyaman & Terpercaya di Pekanbaru',
+    heroSubheadline: 'CariKostKita hadir untuk memudahkan kamu menemukan kost terbaik di Pekanbaru. Dengan tampilan yang simpel, cepat, dan lengkap, semua kebutuhan kost ada di genggaman.',
+    heroCtaPrimaryLabel: 'Download APK',
+    heroCtaSecondaryLabel: 'Lihat Fitur',
+    heroCtaSecondaryLink: '#fitur',
+    heroAdFreeText: 'Bebas Iklan',
+    heroTrustBadge1: 'Mudah Digunakan',
+    heroTrustBadge2: 'Data Terpercaya',
+    heroTrustBadge3: 'Update Rutin',
+    ownerTitle: 'Anda punya kost di Pekanbaru?',
+    ownerIntro: 'Daftarkan kost Anda di CariKostKita agar lebih mudah ditemukan calon penyewa mahasiswa dan pekerja tanpa komisi perantara.',
+    ownerWaLabel: 'Daftar via WhatsApp',
+    aboutTitle: 'Dibangun untuk Kebutuhan Pencari Kost',
+    aboutStory: 'CariKostKita adalah aplikasi yang dikembangkan untuk membantu masyarakat, terutama anak rantau dan mahasiswa, dalam mencari kost dengan lebih mudah, cepat, dan terpercaya.',
+    feedbackActive: true,
+    feedbackTitle: 'Bantu kami menyempurnakan CariKostKita',
+    feedbackDesc: 'Menemukan bug atau punya usulan fitur untuk CariKostKita? Sampaikan masukan Anda langsung ke admin WhatsApp kami.',
+    feedbackButtonLabel: 'Kirim Masukan via WhatsApp',
+    finalCtaEyebrow: 'JANGAN TUNGGU LAGI!',
+    finalCtaTitle: 'Yuk, Temukan Kost Terbaikmu Sekarang!',
+    finalCtaDesc: 'Download CariKostKita sekarang dan mulai pencarian kost impianmu.',
+    finalCtaButtonLabel: 'Download APK Sekarang',
+    footerTagline: 'Kost terbaik, untuk masa depanmu.',
+    footerCopyright: '© 2026 CariKostKita. All rights reserved.',
+    securityModalTitle: 'Panduan Dialog Download Android',
+    securityModalDesc: 'Saat mengunduh berkas APK di luar Google Play Store, peramban (Chrome) akan menampilkan pesan standar keamanan:',
+    securityModalNote: 'Berkas APK CariKostKita 100% aman dan diverifikasi langsung dari repositori resmi proyek.',
+    legalPrivacy: 'Kebijakan Privasi CariKostKita: Kami menghargai privasi Anda dan hanya menggunakan data untuk keperluan operasional layanan pencarian kost.',
+    legalTerms: 'Syarat & Ketentuan CariKostKita: Layanan ini disediakan secara gratis untuk mempermudah pencarian kost di Pekanbaru.',
+    navLinks: [
+      { id: 'nav-1', label: 'Beranda', href: '#beranda', order: 1, is_active: true },
+      { id: 'nav-2', label: 'Fitur', href: '#fitur', order: 2, is_active: true },
+      { id: 'nav-3', label: 'Cara Install', href: '#install', order: 3, is_active: true },
+      { id: 'nav-4', label: 'Untuk Pemilik Kost', href: '#pemilik', order: 4, is_active: true },
+      { id: 'nav-5', label: 'FAQ', href: '#faq', order: 5, is_active: true },
+    ],
+    trustItems: [
+      { id: 'trust-1', icon: 'shield', title: 'Berkas resmi & terverifikasi', desc: 'Dirilis dari repositori resmi proyek tanpa adware atau pihak ketiga.', order: 1, is_active: true },
+      { id: 'trust-2', icon: 'bolt', title: 'Ringan & hemat kuota', desc: 'Ukuran berkas sangat ringkas agar cepat diunduh tanpa membebani memori ponsel.', order: 2, is_active: true },
+      { id: 'trust-3', icon: 'lock', title: 'Izin yang masuk akal', desc: 'Hanya izin lokasi untuk peta navigasi kost dan galeri foto bagi pemilik kost.', order: 3, is_active: true },
+    ],
+    featureItems: [
+      { id: 'feat-1', icon: 'search', title: 'Pencarian Mudah', desc: 'Temukan kost sesuai lokasi kampus, rentang harga, dan fasilitas yang kamu butuhkan.', order: 1, is_active: true },
+      { id: 'feat-2', icon: 'file-lines', title: 'Informasi Lengkap', desc: 'Lihat detail kamar, foto asli terverifikasi, fasilitas lengkap, serta kontak langsung pemilik tanpa perantara.', order: 2, is_active: true },
+      { id: 'feat-3', icon: 'location-dot', title: 'Lokasi Strategis', desc: 'Pilihan kost terverifikasi di area strategis yang dekat dengan kampus dan pusat aktivitas.', order: 3, is_active: true },
+      { id: 'feat-4', icon: 'sliders', title: 'Tampilan Sederhana', desc: 'Desain antarmuka bersih, ringan, dan sangat mudah digunakan oleh siapa saja.', order: 4, is_active: true },
+    ],
+    installSteps: [
+      { id: 'step-1', step_number: '1', title: 'Download APK', desc: 'Klik tombol unduh untuk mendapatkan berkas aplikasi resmi.', order: 1, is_active: true },
+      { id: 'step-2', step_number: '2', title: 'Konfirmasi Dialog', desc: 'Pilih "Tetap Download" jika muncul peringatan browser.', order: 2, is_active: true },
+      { id: 'step-3', step_number: '3', title: 'Izinkan Sumber', desc: 'Buka berkas unduhan dan aktifkan izin instalasi dari sumber ini.', order: 3, is_active: true },
+      { id: 'step-4', step_number: '4', title: 'Selesai!', desc: 'Buka aplikasi dan mulai mencari kost idamanmu.', order: 4, is_active: true },
+    ],
+    ownerSteps: [
+      { id: 'ostep-1', title: 'Unduh dan pasang aplikasi CariKostKita.', order: 1, is_active: true },
+      { id: 'ostep-2', title: 'Buka Profil, lalu pilih "Daftar sebagai Pemilik Kost".', order: 2, is_active: true },
+      { id: 'ostep-3', title: 'Isi identitas, alamat kost, fasilitas, dan foto kamar dengan lengkap.', order: 3, is_active: true },
+      { id: 'ostep-4', title: 'Tim verifikasi meninjau pengajuan Anda dalam kurun waktu 1x24 jam.', order: 4, is_active: true },
+      { id: 'ostep-5', title: 'Setelah disetujui, listing kost Anda langsung tayang dan dashboard pemilik dapat digunakan.', order: 5, is_active: true },
+    ],
+    faqItems: [
+      { id: 'faq-1', question: 'Mengapa aplikasi belum ada di Google Play Store?', answer: 'Aplikasi sedang dalam tahap pra-rilis publik. Berkas APK dibagikan langsung agar para pencari kost bisa langsung menikmati kemudahan mencari kost sebelum tersedia di Play Store.', order: 1, is_active: true },
+      { id: 'faq-2', question: 'Apakah aman menginstal file APK ini?', answer: 'Sangat aman. Berkas APK dikompilasi langsung dari repositori resmi proyek tanpa injeksi kode pihak ketiga. Android akan menampilkan dialog standar yang aman untuk disetujui.', order: 2, is_active: true },
+      { id: 'faq-3', question: 'Versi Android apa yang didukung?', answer: 'Mendukung Android 8.0+ hingga versi Android yang lebih baru dengan ukuran hemat kuota.', order: 3, is_active: true },
+      { id: 'faq-4', question: 'Apakah mencari kost dikenakan biaya?', answer: 'Tidak. Layanan pencarian kost 100% gratis untuk para pencari kost tanpa biaya langganan, biaya admin, maupun komisi perantara.', order: 4, is_active: true },
+      { id: 'faq-5', question: 'Bagaimana jika data kost tidak sesuai?', answer: 'Gunakan fitur lapor di aplikasi atau hubungi kami langsung via WhatsApp atau email bantuan. Tim verifikasi kami akan segera menindaklanjuti.', order: 5, is_active: true },
+      { id: 'faq-6', question: 'Apakah pemilik kost bisa langsung mengunggah?', answer: 'Bisa! Setiap pengajuan kost akan ditinjau oleh tim kurasi kami dalam 1x24 jam untuk mencegah penipuan dan memastikan listing valid.', order: 6, is_active: true },
+    ],
   };
 
   // Merge hierarchy: defaults -> FastAPI -> Admin-Gue HTTP -> Admin-Gue local filesystem
@@ -99,12 +173,18 @@ export async function GET() {
     ...adminLocalSettings,
   };
 
+  // Resolve list fields prioritizing non-empty arrays
+  const resolveList = (camel: string, snake: string, fallback: any[]) => {
+    const list = merged[camel] || merged[snake];
+    return Array.isArray(list) && list.length > 0 ? list : fallback;
+  };
+
   // Normalize all fields for both camelCase and snake_case consumption
   const normalized = {
     ...merged,
     appName: merged.appName || merged.app_name || defaults.appName,
     app_name: merged.app_name || merged.appName || defaults.appName,
-    tagline: merged.tagline || defaults.tagline,
+    tagline: merged.tagline ?? defaults.tagline,
     whatsapp: merged.whatsapp || merged.contact_whatsapp || defaults.whatsapp,
     contact_whatsapp: merged.contact_whatsapp || merged.whatsapp || defaults.whatsapp,
     apkUrl: merged.apkUrl || merged.apk_url || defaults.apkUrl,
@@ -123,6 +203,8 @@ export async function GET() {
     site_title: merged.site_title || merged.siteTitle || defaults.siteTitle,
     siteDescription: merged.siteDescription || merged.site_description || defaults.siteDescription,
     site_description: merged.site_description || merged.siteDescription || defaults.siteDescription,
+    metaKeywords: merged.metaKeywords || merged.meta_keywords || defaults.metaKeywords,
+    meta_keywords: merged.meta_keywords || merged.metaKeywords || defaults.metaKeywords,
     targetCity: merged.targetCity || merged.target_city || defaults.targetCity,
     target_city: merged.target_city || merged.targetCity || defaults.targetCity,
     apkSize: merged.apkSize || merged.apk_size || defaults.apkSize,
@@ -145,15 +227,77 @@ export async function GET() {
     hero_image_url: merged.hero_image_url ?? merged.heroImageUrl ?? defaults.heroImageUrl,
     logoUrl: merged.logoUrl ?? merged.logo_url ?? defaults.logoUrl,
     logo_url: merged.logo_url ?? merged.logoUrl ?? defaults.logoUrl,
+    faviconUrl: merged.faviconUrl ?? merged.favicon_url ?? defaults.faviconUrl,
+    favicon_url: merged.favicon_url ?? merged.faviconUrl ?? defaults.faviconUrl,
+    ogImageUrl: merged.ogImageUrl ?? merged.og_image_url ?? defaults.ogImageUrl,
+    og_image_url: merged.og_image_url ?? merged.ogImageUrl ?? defaults.ogImageUrl,
     githubUrl: merged.githubUrl || merged.github_url || defaults.githubUrl,
     github_url: merged.github_url || merged.githubUrl || defaults.githubUrl,
-    instagram: merged.instagram || defaults.instagram,
-    facebook: merged.facebook || defaults.facebook,
-    tiktok: merged.tiktok || defaults.tiktok,
+    brandColor: merged.brandColor || merged.brand_color || defaults.brandColor,
+    brand_color: merged.brand_color || merged.brandColor || defaults.brandColor,
+    instagram: merged.instagram ?? defaults.instagram,
+    facebook: merged.facebook ?? defaults.facebook,
+    tiktok: merged.tiktok ?? defaults.tiktok,
+    youtube: merged.youtube ?? defaults.youtube,
+    linkedin: merged.linkedin ?? defaults.linkedin,
+
+    heroHeadline: merged.heroHeadline ?? merged.hero_headline ?? defaults.heroHeadline,
+    heroSubheadline: merged.heroSubheadline ?? merged.hero_subheadline ?? defaults.heroSubheadline,
+    heroCtaPrimaryLabel: merged.heroCtaPrimaryLabel ?? merged.hero_cta_primary_label ?? defaults.heroCtaPrimaryLabel,
+    heroCtaSecondaryLabel: merged.heroCtaSecondaryLabel ?? merged.hero_cta_secondary_label ?? defaults.heroCtaSecondaryLabel,
+    heroCtaSecondaryLink: merged.heroCtaSecondaryLink ?? merged.hero_cta_secondary_link ?? defaults.heroCtaSecondaryLink,
+    heroAdFreeText: merged.heroAdFreeText ?? merged.hero_ad_free_text ?? defaults.heroAdFreeText,
+    heroTrustBadge1: merged.heroTrustBadge1 ?? merged.hero_trust_badge_1 ?? defaults.heroTrustBadge1,
+    heroTrustBadge2: merged.heroTrustBadge2 ?? merged.hero_trust_badge_2 ?? defaults.heroTrustBadge2,
+    heroTrustBadge3: merged.heroTrustBadge3 ?? merged.hero_trust_badge_3 ?? defaults.heroTrustBadge3,
+
+    ownerTitle: merged.ownerTitle ?? merged.owner_title ?? defaults.ownerTitle,
+    ownerIntro: merged.ownerIntro ?? merged.owner_intro ?? defaults.ownerIntro,
+    ownerWaLabel: merged.ownerWaLabel ?? merged.owner_wa_label ?? defaults.ownerWaLabel,
+
+    aboutTitle: merged.aboutTitle ?? merged.about_title ?? defaults.aboutTitle,
+    aboutStory: merged.aboutStory ?? merged.about_story ?? defaults.aboutStory,
+
+    feedbackActive: Boolean(merged.feedbackActive ?? merged.feedback_active ?? defaults.feedbackActive),
+    feedbackTitle: merged.feedbackTitle ?? merged.feedback_title ?? defaults.feedbackTitle,
+    feedbackDesc: merged.feedbackDesc ?? merged.feedback_desc ?? defaults.feedbackDesc,
+    feedbackButtonLabel: merged.feedbackButtonLabel ?? merged.feedback_button_label ?? defaults.feedbackButtonLabel,
+
+    finalCtaEyebrow: merged.finalCtaEyebrow ?? merged.final_cta_eyebrow ?? defaults.finalCtaEyebrow,
+    finalCtaTitle: merged.finalCtaTitle ?? merged.final_cta_title ?? defaults.finalCtaTitle,
+    finalCtaDesc: merged.finalCtaDesc ?? merged.final_cta_desc ?? defaults.finalCtaDesc,
+    finalCtaButtonLabel: merged.finalCtaButtonLabel ?? merged.final_cta_button_label ?? defaults.finalCtaButtonLabel,
+
+    footerTagline: merged.footerTagline ?? merged.footer_tagline ?? defaults.footerTagline,
+    footerCopyright: merged.footerCopyright ?? merged.footer_copyright ?? defaults.footerCopyright,
+
+    securityModalTitle: merged.securityModalTitle ?? merged.security_modal_title ?? defaults.securityModalTitle,
+    securityModalDesc: merged.securityModalDesc ?? merged.security_modal_desc ?? defaults.securityModalDesc,
+    securityModalNote: merged.securityModalNote ?? merged.security_modal_note ?? defaults.securityModalNote,
+
+    legalPrivacy: merged.legalPrivacy ?? merged.legal_privacy ?? defaults.legalPrivacy,
+    legalTerms: merged.legalTerms ?? merged.legal_terms ?? defaults.legalTerms,
+
+    // Lists
+    navLinks: resolveList('navLinks', 'nav_links', defaults.navLinks),
+    trustItems: resolveList('trustItems', 'trust_items', defaults.trustItems),
+    featureItems: resolveList('featureItems', 'feature_items', defaults.featureItems),
+    installSteps: resolveList('installSteps', 'install_steps', defaults.installSteps),
+    ownerSteps: resolveList('ownerSteps', 'owner_steps', defaults.ownerSteps),
+    faqItems: resolveList('faqItems', 'faq_items', defaults.faqItems),
   };
 
-  return NextResponse.json({
-    success: true,
-    data: normalized,
-  });
+  return NextResponse.json(
+    {
+      success: true,
+      data: normalized,
+    },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    }
+  );
 }
