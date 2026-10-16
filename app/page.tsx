@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBuilding,
@@ -42,6 +42,11 @@ import {
 } from '@fortawesome/free-brands-svg-icons';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import {
+  subscribeLandingRealtime,
+  type RealtimeStatus,
+  type SettingsUpdatedPayload,
+} from '../lib/landing-realtime';
 
 config.autoAddCss = false;
 
@@ -79,6 +84,52 @@ function resolveFaIcon(name?: string, fallback: IconDefinition = faCheck): IconD
   if (!name) return fallback;
   const clean = name.toLowerCase().replace(/^(fa-|icon-)/, '');
   return ICON_MAP[clean] || fallback;
+}
+
+/**
+ * Append the settings revision to a remote media URL so replacing a file
+ * (even under the same name/path) is reflected instantly instead of being
+ * stuck behind browser/proxy image caches. Data/blob URLs are returned
+ * untouched because query strings would corrupt them.
+ */
+function withRevision(url: string | undefined, revision: number): string {
+  if (!url) return '';
+  if (revision <= 0) return url;
+  if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+  const sep = url.includes('?') ? '&' : '?';
+  if (new RegExp(`[?&]v=${revision}(?:&|$)`).test(url)) return url;
+  return `${url}${sep}v=${revision}`;
+}
+
+/** Canonical signature of the pop-up content; dismissal is stored per signature. */
+function popupSignatureOf(cfg: {
+  popupTitle: string;
+  popupContent: string;
+  popupImageUrl: string;
+  popupButtonLabel: string;
+  popupButtonUrl: string;
+}): string {
+  return [
+    cfg.popupTitle || '',
+    cfg.popupContent || '',
+    cfg.popupImageUrl || '',
+    cfg.popupButtonLabel || '',
+    cfg.popupButtonUrl || '',
+  ].join('|');
+}
+
+function dismissPopupSignature(cfg: {
+  popupTitle: string;
+  popupContent: string;
+  popupImageUrl: string;
+  popupButtonLabel: string;
+  popupButtonUrl: string;
+}): void {
+  try {
+    sessionStorage.setItem('ckk_popup_dismissed_sig', popupSignatureOf(cfg));
+  } catch (_) {
+    /* storage unavailable: dismissal lasts for this view only */
+  }
 }
 
 const Button = ({ apk, light = false, label = 'Download APK' }: { apk: string; light?: boolean; label?: string }) => (
@@ -353,18 +404,33 @@ const defaultConfig: AppConfigState = {
 export default function Home() {
   const [appConfig, setAppConfig] = useState<AppConfigState>(defaultConfig);
   const [promoAds, setPromoAds] = useState<PromoAd[]>([]);
+  // Realtime sync state: appliedRevisionRef is the source of truth for
+  // dedupe + out-of-order guards (refs avoid stale closures in callbacks).
+  const [settingsRevision, setSettingsRevision] = useState(0);
+  const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('CONNECTING');
+  const appliedRevisionRef = useRef(0);
 
-  useEffect(() => {
-    async function fetchConfig() {
+  const fetchPromoAds = useCallback(async () => {
+    try {
+      const adsResult = await fetch('/api/ads', { cache: 'no-store' });
+      if (adsResult.ok) {
+        const adsJson = await adsResult.json();
+        setPromoAds(Array.isArray(adsJson.data) ? adsJson.data : []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch promo ads', e);
+    }
+  }, []);
+
+  const fetchConfig = useCallback(async (reason = 'init') => {
       try {
-        const [fullResult, proxyResult, settingsResult, releaseResult, adsResult] = await Promise.allSettled([
+        const [fullResult, proxyResult, settingsResult, releaseResult] = await Promise.allSettled([
           fetch(publicApiUrl + '/api/v1/public/settings', { cache: 'no-store' }),
           fetch('/api/settings', { cache: 'no-store' }),
           fetch(publicApiUrl + '/settings', { cache: 'no-store' }),
           fetch(publicApiUrl + '/latest-release', { cache: 'no-store' }),
-          fetch('/api/ads', { cache: 'no-store' }),
         ]);
-        const [fullJson, proxyJson, setJson, relJson, adsJson] = await Promise.all([
+        const [fullJson, proxyJson, setJson, relJson] = await Promise.all([
           fullResult.status === 'fulfilled' && fullResult.value.ok
             ? fullResult.value.json()
             : Promise.resolve(null),
@@ -377,9 +443,6 @@ export default function Home() {
           releaseResult.status === 'fulfilled' && releaseResult.value.ok
             ? releaseResult.value.json()
             : Promise.resolve(null),
-          adsResult.status === 'fulfilled' && adsResult.value.ok
-            ? adsResult.value.json()
-            : Promise.resolve(null),
         ]);
 
         // Merge settings: proxyJson contains live Admin-Gue + FastAPI merged configuration
@@ -387,13 +450,23 @@ export default function Home() {
           ...(fullJson?.data || {}),
           ...(proxyJson?.data || {}),
         };
-        if (adsJson) {
-          setPromoAds(Array.isArray(adsJson.data) ? adsJson.data : []);
+
+        // Revision guard: ignore stale / duplicate deliveries so rapid
+        // sequential admin saves always converge on the newest state.
+        const incomingRevision = Number(full.revision ?? 0) || 0;
+        if (reason !== 'init' && incomingRevision > 0 && incomingRevision <= appliedRevisionRef.current) {
+          return;
+        }
+        if (incomingRevision > 0) {
+          appliedRevisionRef.current = incomingRevision;
+          setSettingsRevision(incomingRevision);
         }
 
         const resolveArray = <T,>(camelArr: any, snakeArr: any, currentArr: T[]): T[] => {
-          if (Array.isArray(camelArr) && camelArr.length > 0) return camelArr;
-          if (Array.isArray(snakeArr) && snakeArr.length > 0) return snakeArr;
+          // An explicitly empty array is a valid admin choice (delete all
+          // items) and must sync; only fall back when the key is absent.
+          if (Array.isArray(camelArr)) return camelArr;
+          if (Array.isArray(snakeArr)) return snakeArr;
           return currentArr;
         };
 
@@ -416,93 +489,106 @@ export default function Home() {
           ? false
           : true;
 
+        // Signature-based dismissal: a previously dismissed pop-up must
+        // reappear when the admin publishes new content, and must vanish
+        // instantly (without relying on timers/storage) when deactivated.
+        const nextPopupTitle = full.popupTitle ?? full.popup_title ?? '';
+        const nextPopupContent = full.popupContent ?? full.popup_content ?? '';
+        const nextPopupImage = full.popupImageUrl ?? full.popup_image_url ?? '';
+        const nextPopupLabel = full.popupButtonLabel ?? full.popup_button_label ?? '';
+        const nextPopupUrl = full.popupButtonUrl ?? full.popup_button_url ?? '';
+        const popupSignature = [
+          nextPopupTitle, nextPopupContent, nextPopupImage, nextPopupLabel, nextPopupUrl,
+        ].join('|');
         if (popupActiveResolved) {
           try {
-            const dismissed = sessionStorage.getItem('ckk_popup_dismissed');
-            if (dismissed !== 'true') {
+            const dismissedSig = sessionStorage.getItem('ckk_popup_dismissed_sig');
+            if (dismissedSig !== popupSignature) {
               setShowPopupModal(true);
             }
           } catch (_) {
             setShowPopupModal(true);
           }
         } else {
+          // Admin disabled/deleted the pop-up: hide immediately and drop any
+          // pending visible state so it cannot resurrect from stale state.
           setShowPopupModal(false);
         }
 
         setAppConfig((current) => ({
           ...current,
-          appName: full.appName || full.app_name || current.appName,
-          tagline: full.tagline || current.tagline,
-          heroText: full.heroSubheadline || full.hero_subheadline || full.siteDescription || full.site_description || current.heroText,
-          versionName: full.versionName || full.version_name || current.versionName,
-          releaseNotes: full.releaseNotes || full.release_notes || current.releaseNotes,
-          supportEmail: full.supportEmail || full.support_email || current.supportEmail,
-          contactPhone: full.contactPhone || full.contact_phone || current.contactPhone,
-          address: full.address || full.office_address || current.address,
-          siteTitle: full.siteTitle || full.site_title || current.siteTitle,
-          siteDescription: full.siteDescription || full.site_description || current.siteDescription,
-          metaKeywords: full.metaKeywords || full.meta_keywords || current.metaKeywords,
-          targetCity: full.targetCity || full.target_city || current.targetCity,
-          apkSize: full.apkSize || full.apk_size || current.apkSize,
-          minAndroid: full.minAndroid || full.min_android || current.minAndroid,
-          heroBadge1: full.heroBadge1 || full.hero_badge_1 || current.heroBadge1,
-          heroBadge2: full.heroBadge2 || full.hero_badge_2 || current.heroBadge2,
+          appName: full.appName ?? full.app_name ?? current.appName,
+          tagline: full.tagline ?? current.tagline,
+          heroText: full.heroSubheadline ?? full.hero_subheadline ?? full.siteDescription ?? full.site_description ?? current.heroText,
+          versionName: full.versionName ?? full.version_name ?? current.versionName,
+          releaseNotes: full.releaseNotes ?? full.release_notes ?? current.releaseNotes,
+          supportEmail: full.supportEmail ?? full.support_email ?? current.supportEmail,
+          contactPhone: full.contactPhone ?? full.contact_phone ?? current.contactPhone,
+          address: full.address ?? full.office_address ?? current.address,
+          siteTitle: full.siteTitle ?? full.site_title ?? current.siteTitle,
+          siteDescription: full.siteDescription ?? full.site_description ?? current.siteDescription,
+          metaKeywords: full.metaKeywords ?? full.meta_keywords ?? current.metaKeywords,
+          targetCity: full.targetCity ?? full.target_city ?? current.targetCity,
+          apkSize: full.apkSize ?? full.apk_size ?? current.apkSize,
+          minAndroid: full.minAndroid ?? full.min_android ?? current.minAndroid,
+          heroBadge1: full.heroBadge1 ?? full.hero_badge_1 ?? current.heroBadge1,
+          heroBadge2: full.heroBadge2 ?? full.hero_badge_2 ?? current.heroBadge2,
           apk: full.apkUrl || full.apk_url || (relJson?.success && relJson.data?.apk_url ? relJson.data.apk_url : current.apk),
           waNumber: full.whatsapp || full.contact_whatsapp || (setJson?.success && setJson.data?.contact_whatsapp ? setJson.data.contact_whatsapp : current.waNumber),
           bannerActive: bannerActiveResolved,
-          bannerText: full.bannerText || full.banner_text || current.bannerText,
-          bannerLink: full.bannerLink || full.banner_link || current.bannerLink,
-          bannerType: full.bannerType || full.banner_type || current.bannerType,
-          heroImageUrl: full.heroImageUrl || full.hero_image_url || current.heroImageUrl,
-          logoUrl: full.logoUrl || full.logo_url || current.logoUrl,
-          footerLogoUrl: full.footerLogoUrl || full.footer_logo_url || current.footerLogoUrl,
-          appIconUrl: full.appIconUrl || full.app_icon_url || current.appIconUrl,
-          faviconUrl: full.faviconUrl || full.favicon_url || current.faviconUrl,
-          ogImageUrl: full.ogImageUrl || full.og_image_url || current.ogImageUrl,
+          bannerText: full.bannerText ?? full.banner_text ?? current.bannerText,
+          bannerLink: full.bannerLink ?? full.banner_link ?? current.bannerLink,
+          bannerType: full.bannerType ?? full.banner_type ?? current.bannerType,
+          heroImageUrl: full.heroImageUrl ?? full.hero_image_url ?? current.heroImageUrl,
+          logoUrl: full.logoUrl ?? full.logo_url ?? current.logoUrl,
+          footerLogoUrl: full.footerLogoUrl ?? full.footer_logo_url ?? current.footerLogoUrl,
+          appIconUrl: full.appIconUrl ?? full.app_icon_url ?? current.appIconUrl,
+          faviconUrl: full.faviconUrl ?? full.favicon_url ?? current.faviconUrl,
+          ogImageUrl: full.ogImageUrl ?? full.og_image_url ?? current.ogImageUrl,
           popupActive: popupActiveResolved,
-          popupTitle: full.popupTitle || full.popup_title || current.popupTitle,
-          popupContent: full.popupContent || full.popup_content || current.popupContent,
-          popupImageUrl: full.popupImageUrl || full.popup_image_url || current.popupImageUrl,
-          popupButtonLabel: full.popupButtonLabel || full.popup_button_label || current.popupButtonLabel,
-          popupButtonUrl: full.popupButtonUrl || full.popup_button_url || current.popupButtonUrl,
+          popupTitle: full.popupTitle ?? full.popup_title ?? current.popupTitle,
+          popupContent: full.popupContent ?? full.popup_content ?? current.popupContent,
+          popupImageUrl: full.popupImageUrl ?? full.popup_image_url ?? current.popupImageUrl,
+          popupButtonLabel: full.popupButtonLabel ?? full.popup_button_label ?? current.popupButtonLabel,
+          popupButtonUrl: full.popupButtonUrl ?? full.popup_button_url ?? current.popupButtonUrl,
           securityModalActive: securityModalActiveResolved,
-          brandColor: full.brandColor || full.brand_color || current.brandColor,
-          githubUrl: full.githubUrl || full.github_url || current.githubUrl,
-          instagram: full.instagram || current.instagram,
-          facebook: full.facebook || current.facebook,
-          tiktok: full.tiktok || current.tiktok,
-          youtube: full.youtube || current.youtube,
-          linkedin: full.linkedin || current.linkedin,
-          heroHeadline: full.heroHeadline || full.hero_headline || full.tagline || current.heroHeadline,
-          heroSubheadline: full.heroSubheadline || full.hero_subheadline || current.heroSubheadline,
-          heroCtaPrimaryLabel: full.heroCtaPrimaryLabel || full.hero_cta_primary_label || current.heroCtaPrimaryLabel,
-          heroCtaSecondaryLabel: full.heroCtaSecondaryLabel || full.hero_cta_secondary_label || current.heroCtaSecondaryLabel,
-          heroCtaSecondaryLink: full.heroCtaSecondaryLink || full.hero_cta_secondary_link || current.heroCtaSecondaryLink,
-          heroAdFreeText: full.heroAdFreeText || full.hero_ad_free_text || current.heroAdFreeText,
-          heroTrustBadge1: full.heroTrustBadge1 || full.hero_trust_badge_1 || current.heroTrustBadge1,
-          heroTrustBadge2: full.heroTrustBadge2 || full.hero_trust_badge_2 || current.heroTrustBadge2,
-          heroTrustBadge3: full.heroTrustBadge3 || full.hero_trust_badge_3 || current.heroTrustBadge3,
-          ownerTitle: full.ownerTitle || full.owner_title || current.ownerTitle,
-          ownerIntro: full.ownerIntro || full.owner_intro || current.ownerIntro,
-          ownerWaLabel: full.ownerWaLabel || full.owner_wa_label || current.ownerWaLabel,
-          ownerSecondaryLabel: full.ownerSecondaryLabel || full.owner_secondary_label || current.ownerSecondaryLabel,
-          aboutTitle: full.aboutTitle || full.about_title || current.aboutTitle,
-          aboutStory: full.aboutStory || full.about_story || current.aboutStory,
+          brandColor: full.brandColor ?? full.brand_color ?? current.brandColor,
+          githubUrl: full.githubUrl ?? full.github_url ?? current.githubUrl,
+          instagram: full.instagram ?? current.instagram,
+          facebook: full.facebook ?? current.facebook,
+          tiktok: full.tiktok ?? current.tiktok,
+          youtube: full.youtube ?? current.youtube,
+          linkedin: full.linkedin ?? current.linkedin,
+          heroHeadline: full.heroHeadline ?? full.hero_headline ?? full.tagline ?? current.heroHeadline,
+          heroSubheadline: full.heroSubheadline ?? full.hero_subheadline ?? current.heroSubheadline,
+          heroCtaPrimaryLabel: full.heroCtaPrimaryLabel ?? full.hero_cta_primary_label ?? current.heroCtaPrimaryLabel,
+          heroCtaSecondaryLabel: full.heroCtaSecondaryLabel ?? full.hero_cta_secondary_label ?? current.heroCtaSecondaryLabel,
+          heroCtaSecondaryLink: full.heroCtaSecondaryLink ?? full.hero_cta_secondary_link ?? current.heroCtaSecondaryLink,
+          heroAdFreeText: full.heroAdFreeText ?? full.hero_ad_free_text ?? current.heroAdFreeText,
+          heroTrustBadge1: full.heroTrustBadge1 ?? full.hero_trust_badge_1 ?? current.heroTrustBadge1,
+          heroTrustBadge2: full.heroTrustBadge2 ?? full.hero_trust_badge_2 ?? current.heroTrustBadge2,
+          heroTrustBadge3: full.heroTrustBadge3 ?? full.hero_trust_badge_3 ?? current.heroTrustBadge3,
+          ownerTitle: full.ownerTitle ?? full.owner_title ?? current.ownerTitle,
+          ownerIntro: full.ownerIntro ?? full.owner_intro ?? current.ownerIntro,
+          ownerWaLabel: full.ownerWaLabel ?? full.owner_wa_label ?? current.ownerWaLabel,
+          ownerSecondaryLabel: full.ownerSecondaryLabel ?? full.owner_secondary_label ?? current.ownerSecondaryLabel,
+          aboutTitle: full.aboutTitle ?? full.about_title ?? current.aboutTitle,
+          aboutStory: full.aboutStory ?? full.about_story ?? current.aboutStory,
           feedbackActive: feedbackActiveResolved,
-          feedbackTitle: full.feedbackTitle || full.feedback_title || current.feedbackTitle,
-          feedbackDesc: full.feedbackDesc || full.feedback_desc || current.feedbackDesc,
-          feedbackButtonLabel: full.feedbackButtonLabel || full.feedback_button_label || current.feedbackButtonLabel,
-          finalCtaEyebrow: full.finalCtaEyebrow || full.final_cta_eyebrow || current.finalCtaEyebrow,
-          finalCtaTitle: full.finalCtaTitle || full.final_cta_title || current.finalCtaTitle,
-          finalCtaDesc: full.finalCtaDesc || full.final_cta_desc || current.finalCtaDesc,
-          finalCtaButtonLabel: full.finalCtaButtonLabel || full.final_cta_button_label || current.finalCtaButtonLabel,
-          footerTagline: full.footerTagline || full.footer_tagline || current.footerTagline,
-          footerCopyright: full.footerCopyright || full.footer_copyright || current.footerCopyright,
-          securityModalTitle: full.securityModalTitle || full.security_modal_title || current.securityModalTitle,
-          securityModalDesc: full.securityModalDesc || full.security_modal_desc || current.securityModalDesc,
-          securityModalNote: full.securityModalNote || full.security_modal_note || current.securityModalNote,
-          legalPrivacy: full.legalPrivacy || full.legal_privacy || current.legalPrivacy,
-          legalTerms: full.legalTerms || full.legal_terms || current.legalTerms,
+          feedbackTitle: full.feedbackTitle ?? full.feedback_title ?? current.feedbackTitle,
+          feedbackDesc: full.feedbackDesc ?? full.feedback_desc ?? current.feedbackDesc,
+          feedbackButtonLabel: full.feedbackButtonLabel ?? full.feedback_button_label ?? current.feedbackButtonLabel,
+          finalCtaEyebrow: full.finalCtaEyebrow ?? full.final_cta_eyebrow ?? current.finalCtaEyebrow,
+          finalCtaTitle: full.finalCtaTitle ?? full.final_cta_title ?? current.finalCtaTitle,
+          finalCtaDesc: full.finalCtaDesc ?? full.final_cta_desc ?? current.finalCtaDesc,
+          finalCtaButtonLabel: full.finalCtaButtonLabel ?? full.final_cta_button_label ?? current.finalCtaButtonLabel,
+          footerTagline: full.footerTagline ?? full.footer_tagline ?? current.footerTagline,
+          footerCopyright: full.footerCopyright ?? full.footer_copyright ?? current.footerCopyright,
+          securityModalTitle: full.securityModalTitle ?? full.security_modal_title ?? current.securityModalTitle,
+          securityModalDesc: full.securityModalDesc ?? full.security_modal_desc ?? current.securityModalDesc,
+          securityModalNote: full.securityModalNote ?? full.security_modal_note ?? current.securityModalNote,
+          legalPrivacy: full.legalPrivacy ?? full.legal_privacy ?? current.legalPrivacy,
+          legalTerms: full.legalTerms ?? full.legal_terms ?? current.legalTerms,
           navLinks: resolveArray(full.navLinks, full.nav_links, current.navLinks),
           trustItems: resolveArray(full.trustItems, full.trust_items, current.trustItems),
           featureItems: resolveArray(full.featureItems, full.feature_items, current.featureItems),
@@ -513,11 +599,61 @@ export default function Home() {
       } catch (e) {
         console.error('Failed to fetch dynamic settings', e);
       }
-    }
-    fetchConfig();
-  }, []);
+  }, [fetchPromoAds]);
 
-  // Realtime client-side sync of document title, description, favicon, app icon, and OG image
+  // Initial load: full settings + promo ads.
+  useEffect(() => {
+    fetchConfig('init');
+    fetchPromoAds();
+  }, [fetchConfig, fetchPromoAds]);
+
+  // PRIMARY realtime path: Supabase Realtime broadcast (published by the
+  // admin session only after FastAPI confirms the commit) + postgres_changes
+  // for direct database edits. Selective state refresh, never a reload.
+  useEffect(() => {
+    const unsubscribe = subscribeLandingRealtime({
+      onSettingsUpdated: (payload: SettingsUpdatedPayload) => {
+        const incoming = Number(payload?.revision ?? 0) || 0;
+        if (incoming > 0 && incoming <= appliedRevisionRef.current) return; // dedupe/out-of-order
+        fetchConfig('realtime');
+      },
+      onAdsChanged: () => {
+        fetchPromoAds();
+      },
+      onStatusChange: (status) => {
+        setRealtimeStatus(status);
+      },
+    });
+    return unsubscribe;
+  }, [fetchConfig, fetchPromoAds]);
+
+  // FALLBACK only (never the primary path): while Realtime is not
+  // SUBSCRIBED, re-validate at a slow 30s cadence; always re-validate when
+  // the tab becomes visible or regains focus (covers reconnect/sleep gaps).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') fetchConfig('visibility');
+    };
+    const onFocus = () => fetchConfig('focus');
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    let timer: ReturnType<typeof setInterval> | undefined;
+    if (realtimeStatus !== 'SUBSCRIBED') {
+      timer = setInterval(() => fetchConfig('fallback-poll'), 30000);
+    }
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+      if (timer) clearInterval(timer);
+    };
+  }, [fetchConfig, realtimeStatus]);
+
+  // Realtime client-side sync of document title, description, favicon, app icon, and OG image.
+  // NOTE (browser limitation): updating the <link rel="icon"> href applies to
+  // new navigations/tabs; browsers aggressively cache favicons per origin and
+  // may keep showing the old icon until the user hard-refreshes or clears
+  // site data. The revision query string below is the strongest signal a web
+  // page can send — it cannot force-invalidate the browser's favicon cache.
   useEffect(() => {
     if (appConfig.siteTitle) {
       document.title = appConfig.siteTitle;
@@ -542,7 +678,7 @@ export default function Home() {
         linkIcon.setAttribute('rel', 'icon');
         document.head.appendChild(linkIcon);
       }
-      linkIcon.setAttribute('href', appConfig.faviconUrl);
+      linkIcon.setAttribute('href', withRevision(appConfig.faviconUrl, settingsRevision));
     }
     if (appConfig.appIconUrl) {
       let appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
@@ -551,13 +687,30 @@ export default function Home() {
         appleIcon.setAttribute('rel', 'apple-touch-icon');
         document.head.appendChild(appleIcon);
       }
-      appleIcon.setAttribute('href', appConfig.appIconUrl);
+      appleIcon.setAttribute('href', withRevision(appConfig.appIconUrl, settingsRevision));
     }
     if (appConfig.ogImageUrl) {
       const ogImg = document.querySelector('meta[property="og:image"]');
-      if (ogImg) ogImg.setAttribute('content', appConfig.ogImageUrl);
+      if (ogImg) ogImg.setAttribute('content', withRevision(appConfig.ogImageUrl, settingsRevision));
     }
-  }, [appConfig.siteTitle, appConfig.siteDescription, appConfig.metaKeywords, appConfig.faviconUrl, appConfig.appIconUrl, appConfig.ogImageUrl]);
+  }, [appConfig.siteTitle, appConfig.siteDescription, appConfig.metaKeywords, appConfig.faviconUrl, appConfig.appIconUrl, appConfig.ogImageUrl, settingsRevision]);
+
+  // A failed image load must not freeze the logo forever: retry the newest
+  // URL as soon as the admin publishes a replacement.
+  useEffect(() => {
+    setLogoFailed(false);
+  }, [appConfig.logoUrl]);
+  useEffect(() => {
+    setFooterLogoFailed(false);
+  }, [appConfig.footerLogoUrl, appConfig.logoUrl]);
+
+  // A dismissed announcement banner belongs to its content: show the banner
+  // again automatically when the admin publishes a new message.
+  const bannerSignature = `${appConfig.bannerText}|${appConfig.bannerLink}|${appConfig.bannerType}`;
+  useEffect(() => {
+    setBannerDismissed(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bannerSignature]);
 
   const apk = appConfig.apk;
   const waNumber = appConfig.waNumber;
@@ -727,7 +880,7 @@ export default function Home() {
           <a className="brand" href="#beranda">
             {appConfig.logoUrl && !logoFailed ? (
               <img
-                src={appConfig.logoUrl}
+                src={withRevision(appConfig.logoUrl, settingsRevision)}
                 alt={appConfig.appName}
                 onError={() => setLogoFailed(true)}
                 style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
@@ -855,7 +1008,7 @@ export default function Home() {
               <img
                 src={
                   appConfig.heroImageUrl
-                    ? appConfig.heroImageUrl
+                    ? withRevision(appConfig.heroImageUrl, settingsRevision)
                     : phoneFilter === 'Putri'
                     ? '/mockup-hero-putri.png'
                     : phoneFilter === 'Putra'
@@ -921,7 +1074,7 @@ export default function Home() {
                   </div>
                   {(ad.image_url || ad.image) && (
                     <img
-                      src={ad.image_url || ad.image}
+                      src={withRevision((ad.image_url || ad.image) as string, settingsRevision)}
                       alt={ad.title}
                       className="promo-banner-img"
                     />
@@ -1215,7 +1368,7 @@ export default function Home() {
             <a href="#beranda" className="brand">
               {(appConfig.footerLogoUrl || appConfig.logoUrl) && !footerLogoFailed ? (
                 <img
-                  src={appConfig.footerLogoUrl || appConfig.logoUrl}
+                  src={withRevision(appConfig.footerLogoUrl || appConfig.logoUrl, settingsRevision)}
                   alt={appConfig.appName}
                   onError={() => setFooterLogoFailed(true)}
                   style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
@@ -1312,7 +1465,7 @@ export default function Home() {
           className="modal-overlay"
           onClick={() => {
             setShowPopupModal(false);
-            try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+            dismissPopupSignature(appConfig);
           }}
         >
           <div
@@ -1324,7 +1477,7 @@ export default function Home() {
               className="modal-close"
               onClick={() => {
                 setShowPopupModal(false);
-                try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+                dismissPopupSignature(appConfig);
               }}
               aria-label="Tutup Dialog"
             >
@@ -1333,7 +1486,7 @@ export default function Home() {
             {appConfig.popupImageUrl && (
               <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', maxHeight: 220 }}>
                 <img
-                  src={appConfig.popupImageUrl}
+                  src={withRevision(appConfig.popupImageUrl, settingsRevision)}
                   alt={appConfig.popupTitle || 'Pop-up'}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
@@ -1358,7 +1511,7 @@ export default function Home() {
                   rel="noopener noreferrer"
                   onClick={() => {
                     setShowPopupModal(false);
-                    try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+                    dismissPopupSignature(appConfig);
                   }}
                 >
                   {appConfig.popupButtonLabel}
@@ -1369,7 +1522,7 @@ export default function Home() {
                 className="download download--light"
                 onClick={() => {
                   setShowPopupModal(false);
-                  try { sessionStorage.setItem('ckk_popup_dismissed', 'true'); } catch (_) {}
+                  dismissPopupSignature(appConfig);
                 }}
               >
                 Tutup

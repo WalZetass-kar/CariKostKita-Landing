@@ -191,6 +191,13 @@ export async function GET() {
   // Normalize all fields for both camelCase and snake_case consumption
   const normalized = {
     ...merged,
+    // Realtime revision: highest known revision wins so subscribers can
+    // dedupe and order rapid sequential admin saves.
+    revision: Math.max(
+      Number(merged.revision ?? 0) || 0,
+      Number(merged._revision ?? 0) || 0
+    ),
+    updated_at: merged.updated_at || merged._updated_at || '',
     appName: merged.appName || merged.app_name || defaults.appName,
     app_name: merged.app_name || merged.appName || defaults.appName,
     tagline: merged.tagline ?? defaults.tagline,

@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
 
+const NO_STORE = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+};
+
 export async function GET() {
   const primaryApiUrl = (
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
@@ -19,7 +25,7 @@ export async function GET() {
     });
     if (res.ok) {
       const json = await res.json();
-      return NextResponse.json(json);
+      return NextResponse.json(json, { headers: NO_STORE });
     }
   } catch (err) {
     console.warn('Landing Page proxy failed to fetch FastAPI public ads:', err);
@@ -33,14 +39,17 @@ export async function GET() {
     });
     if (res.ok) {
       const json = await res.json();
-      return NextResponse.json({
-        success: true,
-        data: json.ads || json.data || [],
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          data: json.ads || json.data || [],
+        },
+        { headers: NO_STORE }
+      );
     }
   } catch (err) {
     console.warn('Landing Page proxy failed to fetch Admin-Gue public ads:', err);
   }
 
-  return NextResponse.json({ success: true, data: [] });
+  return NextResponse.json({ success: true, data: [] }, { headers: NO_STORE });
 }
