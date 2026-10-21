@@ -11,12 +11,17 @@
  *     applied). Covers edits made outside the admin UI (SQL editor).
  *
  * Safety:
- *  - Uses ONLY the public anon key (NEXT_PUBLIC_SUPABASE_*). The
- *    service-role key is never referenced here.
- *  - When env vars are absent, every helper degrades to a no-op with status
- *    DISABLED so the page keeps working with fetch + focus refetch.
+ *  - Uses ONLY the public anon key. The service-role key is never referenced:
+ *    the backend only publishes a key whose JWT role is exactly `anon`.
+ *  - Credentials come from `NEXT_PUBLIC_SUPABASE_*` when configured, and are
+ *    otherwise fetched at runtime from the backend's public Realtime
+ *    endpoint. That runtime path is what makes the push work without any
+ *    build-time configuration.
+ *  - When no credentials can be resolved, every helper degrades to a no-op
+ *    with status DISABLED so the page keeps working with fetch + focus
+ *    refetch.
  *  - No fetching happens here; this module only signals. The page decides
- *    (with revision dedupe) whether a re-fetch is needed.
+ *    (with content dedupe) whether a re-fetch is needed.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -37,6 +42,13 @@ export interface SettingsUpdatedPayload {
   changed_keys?: string[];
 }
 
+export interface RealtimeConfig {
+  url: string;
+  anonKey: string;
+  channel: string;
+  event: string;
+}
+
 interface LandingRealtimeHandlers {
   onSettingsUpdated: (payload: SettingsUpdatedPayload) => void;
   onAdsChanged: () => void;
@@ -44,17 +56,52 @@ interface LandingRealtimeHandlers {
 }
 
 let cachedClient: SupabaseClient | null | undefined;
+let runtimeConfigPromise: Promise<RealtimeConfig | null> | null = null;
+
+const envConfig = (): RealtimeConfig | null => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  if (!url || !anonKey) return null;
+  return {
+    url,
+    anonKey,
+    channel: LANDING_SETTINGS_CHANNEL,
+    event: LANDING_SETTINGS_EVENT,
+  };
+};
+
+/** Build-time credentials win; the runtime endpoint is the fallback. */
+export function resolveRealtimeConfig(): Promise<RealtimeConfig | null> {
+  const fromEnv = envConfig();
+  if (fromEnv) return Promise.resolve(fromEnv);
+  if (!runtimeConfigPromise) {
+    runtimeConfigPromise = fetch('/api/settings/realtime', { cache: 'no-store' })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const json = await res.json().catch(() => null);
+        const cfg = json?.data || json?.config || null;
+        if (!cfg || !cfg.supabase_url || !cfg.supabase_anon_key) return null;
+        return {
+          url: cfg.supabase_url as string,
+          anonKey: cfg.supabase_anon_key as string,
+          channel: (cfg.channel as string) || LANDING_SETTINGS_CHANNEL,
+          event: (cfg.event as string) || LANDING_SETTINGS_EVENT,
+        } satisfies RealtimeConfig;
+      })
+      .catch(() => null);
+  }
+  return runtimeConfigPromise;
+}
 
 export function getRealtimeClient(): SupabaseClient | null {
   if (cachedClient !== undefined) return cachedClient;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-  if (!url || !anonKey) {
+  const config = envConfig();
+  if (!config) {
     cachedClient = null;
     return cachedClient;
   }
   try {
-    cachedClient = createClient(url, anonKey, {
+    cachedClient = createClient(config.url, config.anonKey, {
       realtime: { params: { eventsPerSecond: 10 } },
     });
   } catch (err) {
@@ -68,17 +115,50 @@ export function isRealtimeConfigured(): boolean {
   return getRealtimeClient() !== null;
 }
 
+/** Resolve a client from either credential source. */
+export async function ensureRealtimeClient(): Promise<{
+  client: SupabaseClient;
+  channel: string;
+  event: string;
+} | null> {
+  const envClient = getRealtimeClient();
+  const config = await resolveRealtimeConfig();
+  if (envClient) {
+    return {
+      client: envClient,
+      channel: config?.channel || LANDING_SETTINGS_CHANNEL,
+      event: config?.event || LANDING_SETTINGS_EVENT,
+    };
+  }
+  if (!config) return null;
+  if (cachedClient === undefined || cachedClient === null) {
+    try {
+      cachedClient = createClient(config.url, config.anonKey, {
+        realtime: { params: { eventsPerSecond: 10 } },
+      });
+    } catch (err) {
+      console.warn('[realtime] Failed to create Supabase client:', err);
+      cachedClient = null;
+    }
+  }
+  if (!cachedClient) return null;
+  return { client: cachedClient, channel: config.channel, event: config.event };
+}
+
 /**
- * Subscribe to landing content changes. Returns an unsubscribe function that
+ * Subscribe to landing content changes. Resolves an unsubscribe function that
  * removes every channel (must be called on component unmount).
  */
-export function subscribeLandingRealtime(handlers: LandingRealtimeHandlers): () => void {
-  const supabase = getRealtimeClient();
-  if (!supabase) {
+export async function subscribeLandingRealtime(
+  handlers: LandingRealtimeHandlers
+): Promise<() => void> {
+  const resolved = await ensureRealtimeClient();
+  if (!resolved) {
     handlers.onStatusChange?.('DISABLED');
     console.info('[realtime] Supabase Realtime not configured; using fetch + focus refetch fallback.');
     return () => {};
   }
+  const { client: supabase, channel: CHANNEL, event: EVENT } = resolved;
 
   let settled = false;
   const reportStatus = (status: RealtimeStatus) => {
@@ -86,7 +166,7 @@ export function subscribeLandingRealtime(handlers: LandingRealtimeHandlers): () 
       settled = true;
       handlers.onStatusChange?.(status);
     }
-    console.info(`[realtime] landing-settings status: ${status}`);
+    console.info(`[realtime] ${CHANNEL} status: ${status}`);
   };
 
   const cleanups: Array<() => void> = [];
@@ -104,10 +184,10 @@ export function subscribeLandingRealtime(handlers: LandingRealtimeHandlers): () 
     // 1. Broadcast invalidation published by the admin session after a
     //    confirmed FastAPI commit.
     const broadcast = supabase
-      .channel(LANDING_SETTINGS_CHANNEL, {
+      .channel(CHANNEL, {
         config: { broadcast: { self: false, ack: false } },
       })
-      .on('broadcast', { event: LANDING_SETTINGS_EVENT }, ({ payload }) => {
+      .on('broadcast', { event: EVENT }, ({ payload }) => {
         handlers.onSettingsUpdated((payload || {}) as SettingsUpdatedPayload);
       })
       .subscribe((status) => {

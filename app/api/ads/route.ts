@@ -6,6 +6,17 @@ const NO_STORE = {
   Expires: '0',
 };
 
+async function safeJson(res: Response | null | undefined) {
+  if (!res || !res.ok) return null;
+  try {
+    const text = await res.text();
+    if (!text || !text.trim()) return null;
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   const primaryApiUrl = (
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
@@ -14,42 +25,51 @@ export async function GET() {
 
   const fallbackAdminUrl = (
     process.env.ADMIN_GUE_API_URL ||
-    'http://localhost:3000'
+    'http://localhost:3001'
   ).replace(/\/+$/, '');
 
-  // 1. Try FastAPI public ads
+  const toList = (payload: any): any[] => {
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.ads)) return payload.ads;
+    return [];
+  };
+
+  // 1. FastAPI public ads (authoritative)
+  let fastApiAds: any[] = [];
   try {
     const res = await fetch(`${primaryApiUrl}/api/v1/public/settings/ads`, {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
-    if (res.ok) {
-      const json = await res.json();
-      return NextResponse.json(json, { headers: NO_STORE });
-    }
+    const json = await safeJson(res);
+    fastApiAds = toList(json);
   } catch (err) {
     console.warn('Landing Page proxy failed to fetch FastAPI public ads:', err);
   }
 
-  // 2. Try Admin-Gue public ads fallback
+  if (fastApiAds.length > 0) {
+    return NextResponse.json({ success: true, data: fastApiAds }, { headers: NO_STORE });
+  }
+
+  // 2. Admin-Gue public ads fallback. It is only reached when the
+  //    authoritative source has no rows - previously an empty array was
+  //    returned immediately, so advertisements created in the dashboard
+  //    (which live in the admin store) never reached the landing page.
+  let adminAds: any[] = [];
   try {
     const res = await fetch(`${fallbackAdminUrl}/api/public/ads?platform=website`, {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
-    if (res.ok) {
-      const json = await res.json();
-      return NextResponse.json(
-        {
-          success: true,
-          data: json.ads || json.data || [],
-        },
-        { headers: NO_STORE }
-      );
-    }
+    const json = await safeJson(res);
+    adminAds = toList(json);
   } catch (err) {
     console.warn('Landing Page proxy failed to fetch Admin-Gue public ads:', err);
   }
 
-  return NextResponse.json({ success: true, data: [] }, { headers: NO_STORE });
+  if (adminAds.length > 0) {
+    return NextResponse.json({ success: true, data: adminAds }, { headers: NO_STORE });
+  }
+
+  return NextResponse.json({ success: true, data: fastApiAds }, { headers: NO_STORE });
 }

@@ -2,6 +2,40 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+async function safeJson(res: Response | null | undefined) {
+  if (!res || !res.ok) return null;
+  try {
+    const text = await res.text();
+    if (!text || !text.trim()) return null;
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+const snakeToCamel = (value: string) =>
+  value.replace(/_([a-z0-9])/g, (_match, char: string) => char.toUpperCase());
+
+/**
+ * The authoritative payload defines snake_case fields plus camelCase aliases.
+ * When it is present, its snake_case values must also overwrite every
+ * camelCase alias that came from a weaker mirror. Otherwise a stale
+ * camelCase copy would win in the normalization below and an admin edit
+ * would silently disappear from the landing page.
+ */
+const applyAuthoritativeAliases = (
+  target: Record<string, any>,
+  source: Record<string, any> | null | undefined
+): Record<string, any> => {
+  if (!source) return target;
+  for (const [key, value] of Object.entries(source)) {
+    if (!key.includes('_')) continue;
+    const camel = snakeToCamel(key);
+    if (camel !== key) target[camel] = value;
+  }
+  return target;
+};
+
 export async function GET() {
   const primaryApiUrl = (
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
@@ -10,54 +44,57 @@ export async function GET() {
 
   const fallbackAdminUrl = (
     process.env.ADMIN_GUE_API_URL ||
-    'http://localhost:3000'
+    'http://localhost:3001'
   ).replace(/\/+$/, '');
 
   let adminLocalSettings: Record<string, any> = {};
 
-  // 1. Direct filesystem check for Admin-Gue data/db.json (instant local sync)
-  const cwd = process.cwd();
-  const possibleDbPaths = [
-    path.resolve(cwd, '../Admin-Gue/data/db.json'),
-    path.resolve(cwd, 'Admin-Gue/data/db.json'),
-    'D:/projek java dan web/CariKostKita_FastAPI_Docs/Admin-Gue/data/db.json',
-  ];
+  // 1. Optional local mirror of the admin dashboard (local development only).
+  //    It is opt-in through an explicit environment variable so a developer
+  //    machine can never silently override the production database, and no
+  //    machine-specific absolute path is ever shipped in the repository.
+  const explicitDbPath = process.env.ADMIN_GUE_LOCAL_DB_PATH;
+  const possibleDbPaths = explicitDbPath
+    ? [path.resolve(explicitDbPath)]
+    : [path.resolve(process.cwd(), '../Admin-Gue/data/db.json')];
 
   for (const dbPath of possibleDbPaths) {
     try {
       if (fs.existsSync(dbPath)) {
         const raw = fs.readFileSync(dbPath, 'utf-8');
-        const parsed = JSON.parse(raw);
-        if (parsed.system && typeof parsed.system === 'object') {
-          adminLocalSettings = parsed.system;
-          break;
+        if (raw && raw.trim()) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.system && typeof parsed.system === 'object') {
+            adminLocalSettings = parsed.system;
+            break;
+          }
         }
       }
     } catch {}
   }
 
-  // 2. HTTP check for Admin-Gue public settings endpoint
+  // 2. HTTP check for Admin-Gue public settings endpoint (mirror)
   let adminHttpSettings: Record<string, any> = {};
   try {
     const res = await fetch(`${fallbackAdminUrl}/api/public/settings`, {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
-    if (res.ok) {
-      const json = await res.json();
+    const json = await safeJson(res);
+    if (json) {
       adminHttpSettings = json.settings || json.data || json || {};
     }
   } catch {}
 
-  // 3. HTTP check for FastAPI public settings endpoint
+  // 3. HTTP check for FastAPI public settings endpoint (authoritative)
   let fastApiSettings: Record<string, any> = {};
   try {
     const res = await fetch(`${primaryApiUrl}/api/v1/public/settings`, {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
-    if (res.ok) {
-      const json = await res.json();
+    const json = await safeJson(res);
+    if (json) {
       fastApiSettings = json.data || json || {};
     }
   } catch {}
@@ -174,13 +211,19 @@ export async function GET() {
     ],
   };
 
-  // Merge hierarchy: defaults -> FastAPI -> Admin-Gue HTTP -> Admin-Gue local filesystem
-  const merged: Record<string, any> = {
-    ...defaults,
-    ...fastApiSettings,
-    ...adminHttpSettings,
-    ...adminLocalSettings,
-  };
+  // Merge hierarchy (weakest first):
+  //   defaults -> local mirror -> Admin-Gue mirror -> FastAPI (authoritative)
+  // The durable database state must always win. The mirrors only fill gaps
+  // when the authoritative source is unavailable.
+  const merged: Record<string, any> = applyAuthoritativeAliases(
+    {
+      ...defaults,
+      ...adminLocalSettings,
+      ...adminHttpSettings,
+      ...fastApiSettings,
+    },
+    fastApiSettings
+  );
 
   // Resolve list fields prioritizing non-empty arrays
   const resolveList = (camel: string, snake: string, fallback: any[]) => {
