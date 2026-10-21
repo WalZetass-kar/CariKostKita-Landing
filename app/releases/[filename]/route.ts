@@ -17,13 +17,13 @@ export async function GET(
     const cwd = process.cwd();
     const candidatePaths = [
       path.join(cwd, "public/releases", safeFilename),
+      path.join(cwd, "public/releases/CariKostKita-v1.1.0.apk"),
       path.join(cwd, "public/releases/CariKostKita-v1.0.1.apk"),
       path.join(cwd, "public/releases/CariKostKita.apk"),
       path.join(cwd, "public/releases/app-release.apk"),
       path.resolve(cwd, "../Admin-Gue/public/releases", safeFilename),
-      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita-v1.0.1.apk"),
-      "D:/projek java dan web/CariKostKita_FastAPI_Docs/Landing Page/public/releases/CariKostKita-v1.0.1.apk",
-      "D:/projek java dan web/CariKostKita_FastAPI_Docs/CariKostKita mobile app/app/build/outputs/apk/debug/app-debug.apk",
+      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita-v1.1.0.apk"),
+      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita.apk"),
     ];
 
     for (const filePath of candidatePaths) {
