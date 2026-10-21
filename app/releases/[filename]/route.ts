@@ -4,7 +4,9 @@ import path from "path";
 
 // MIME type resmi untuk file APK Android
 const APK_MIME = "application/vnd.android.package-archive";
-const GITHUB_FALLBACK = "https://github.com/g-423/KosKita/releases/download/v1.0.0-beta/CariKostKita-v1.0.0-beta.apk";
+// Fallback resmi bila berkas tidak tersedia di dalam container serverless.
+const GITHUB_FALLBACK =
+  "https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.1.0/CariKostKita-v1.1.0-release.apk";
 
 export async function GET(
   request: NextRequest,
@@ -17,12 +19,13 @@ export async function GET(
     const cwd = process.cwd();
     const candidatePaths = [
       path.join(cwd, "public/releases", safeFilename),
+      path.join(cwd, "public/releases/CariKostKita-v1.1.0-release.apk"),
       path.join(cwd, "public/releases/CariKostKita-v1.1.0.apk"),
       path.join(cwd, "public/releases/CariKostKita-v1.0.1.apk"),
       path.join(cwd, "public/releases/CariKostKita.apk"),
       path.join(cwd, "public/releases/app-release.apk"),
       path.resolve(cwd, "../Admin-Gue/public/releases", safeFilename),
-      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita-v1.1.0.apk"),
+      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita-v1.1.0-release.apk"),
       path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita.apk"),
     ];
 

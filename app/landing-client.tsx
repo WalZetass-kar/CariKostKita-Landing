@@ -54,7 +54,7 @@ const publicApiUrl = (
   process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
   'https://carikostkitafastapi.vercel.app'
 ).replace(/\/+$/, '');
-const repo = 'https://github.com/g-423/KosKita';
+const repo = 'https://github.com/WalZetass-kar/CariKostKita';
 
 const ICON_MAP: Record<string, IconDefinition> = {
   shield: faShieldHalved,

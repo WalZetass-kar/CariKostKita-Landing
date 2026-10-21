@@ -134,7 +134,7 @@ export async function GET() {
     popupButtonLabel: '',
     popupButtonUrl: '',
     brandColor: '#6D0808',
-    githubUrl: 'https://github.com/g-423/KosKita',
+    githubUrl: 'https://github.com/WalZetass-kar/CariKostKita',
     instagram: 'https://instagram.com/carikostkita',
     facebook: 'https://facebook.com/carikostkita',
     tiktok: 'https://tiktok.com/@carikostkita',
