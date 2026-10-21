@@ -44,7 +44,7 @@ export async function GET() {
 
   const fallbackAdminUrl = (
     process.env.ADMIN_GUE_API_URL ||
-    'http://localhost:3001'
+    'https://admin-carikostkita.vercel.app'
   ).replace(/\/+$/, '');
 
   let adminLocalSettings: Record<string, any> = {};
