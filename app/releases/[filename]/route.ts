@@ -6,7 +6,7 @@ import path from "path";
 const APK_MIME = "application/vnd.android.package-archive";
 // Fallback resmi bila berkas tidak tersedia di dalam container serverless.
 const GITHUB_FALLBACK =
-  "https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.1.1/CariKostKita-v1.1.1-release.apk";
+  "https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.1.2/CariKostKita-v1.1.2-release.apk";
 
 export async function GET(
   request: NextRequest,
@@ -19,11 +19,11 @@ export async function GET(
     const cwd = process.cwd();
     const candidatePaths = [
       path.join(cwd, "public/releases", safeFilename),
-      path.join(cwd, "public/releases/CariKostKita-v1.1.1-release.apk"),
+      path.join(cwd, "public/releases/CariKostKita-v1.1.2-release.apk"),
       path.join(cwd, "public/releases/CariKostKita.apk"),
       path.join(cwd, "public/releases/app-release.apk"),
       path.resolve(cwd, "../Admin-Gue/public/releases", safeFilename),
-      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita-v1.1.1-release.apk"),
+      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita-v1.1.2-release.apk"),
       path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita.apk"),
     ];
 
@@ -32,7 +32,7 @@ export async function GET(
         const stats = fs.statSync(filePath);
         if (stats.isFile() && stats.size > 0) {
           const fileBuffer = fs.readFileSync(filePath);
-          const downloadName = safeFilename.endsWith(".apk") ? safeFilename : "CariKostKita-v1.1.1-release.apk";
+          const downloadName = safeFilename.endsWith(".apk") ? safeFilename : "CariKostKita-v1.1.2-release.apk";
           return new NextResponse(fileBuffer, {
             status: 200,
             headers: {

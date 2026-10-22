@@ -29,9 +29,9 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 # ---------------------------------------------------------------------------
 # Konstanta konten mockup (harus ikut rilis yang sedang Accuracy)
 # ---------------------------------------------------------------------------
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.1.2"
 APK_SIZE = "3.3 MB"
-APK_FILE = "CariKostKita-v1.1.1-release.apk"
+APK_FILE = "CariKostKita-v1.1.2-release.apk"
 CITY = "Pekanbaru"
 CITY_SHORT = "Pekanbaru"
 
