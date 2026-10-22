@@ -644,7 +644,16 @@ export default function LandingClient({
         aria-hidden="true"
       />
 
-      {/* Status sinkronisasi konten (dibaca pembaca layar) */}
+      {/* Indikator sinkronisasi konten: titik + label untuk mata, live
+          region untuk pembaca layar. */}
+      <p className="sync-status" role="status" aria-live="polite">
+        <span className={`sync-dot sync-dot--${realtimeStatus === 'SUBSCRIBED' ? 'live' : 'idle'}`} aria-hidden="true" />
+        <span className="sr-only">
+          {realtimeStatus === 'SUBSCRIBED'
+            ? 'Pembaruan Landing Page otomatis aktif.'
+            : 'Pembaruan Landing Page otomatis tidak aktif; halaman diperbarui berkala.'}
+        </span>
+      </p>
       <p className="sr-only" role="status" aria-live="polite">
         {realtimeStatus === 'SUBSCRIBED'
           ? 'Pembaruan Landing Page otomatis aktif.'
@@ -836,13 +845,14 @@ export default function LandingClient({
 
       {/* Dynamic Promotional Ads & Campaigns (Managed from Admin Dashboard) */}
       {promoAds.length > 0 && (
-        <section className="promo-section reveal-on-scroll">
+        <section className="promo-section reveal-on-scroll" aria-labelledby="promo-judul">
           <div className="shell">
-            <div style={{ display: 'grid', gap: 16 }}>
+            <p className="eyebrow">PROMOSI &amp; EVENT KHUSUS</p>
+            <h2 id="promo-judul" className="promo-title">Penawaran Latest</h2>
+            <div style={{ display: 'grid', gap: 16, marginTop: 20 }}>
               {promoAds.map((ad) => (
                 <div key={ad.id} className="promo-banner-card">
                   <div className="promo-banner-content">
-                    <p className="eyebrow" style={{ marginBottom: 4 }}>PROMOSI & EVENT KHUSUS</p>
                     <h3 style={{ fontSize: 20, fontWeight: 700, margin: '6px 0 8px' }}>{ad.title}</h3>
                     {ad.description && <p style={{ fontSize: 13, color: '#655955', margin: 0, lineHeight: 1.6 }}>{ad.description}</p>}
                     {(ad.target_url || ad.link) && (

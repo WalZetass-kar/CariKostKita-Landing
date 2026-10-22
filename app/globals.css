@@ -306,3 +306,18 @@ footer{background:var(--cream);color:#615651}
 
 /* Teks hanya untuk pembaca layar */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Indikator sinkronisasi konten.
+   Diletakkan di kiri bawah: pojok kanan bawah dipakai tombol WhatsApp
+   mengambang, sehingga keduanya tidak pernah bertumpuk. */
+.sync-status{position:fixed;left:16px;bottom:16px;z-index:40;display:flex;align-items:center;margin:0}
+.sync-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.75)}
+.sync-dot--live{background:#1f9d55}
+.sync-dot--idle{background:#c9a227}
+@media (max-width:768px){
+  .sync-status{left:12px;bottom:12px}
+}
+
+/* Judul section promo */
+.promo-title{margin:0;font-size:26px;letter-spacing:-.03em;font-weight:700}
+@media (max-width:768px){.promo-title{font-size:22px}}

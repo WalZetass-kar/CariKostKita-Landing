@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify:contract": "node scripts/verify_fastapi_contract.mjs",
+    "render:mockups": "python scripts/render_all_premium.py"
   },
   "dependencies": {
     "@fortawesome/free-brands-svg-icons": "^7.3.1",
