@@ -459,7 +459,7 @@ export default function LandingClient({
   });
 
   const handleInstallStepClick = (stepIndex: number) => {
-    // Langkah terakhir hanya menampilkan模拟 selesai; ia tidak boleh
+    // Langkah terakhir hanya menampilkan simulasi selesai; ia tidak boleh
     // me-reset progres karena mockup-nya benar-benar ada.
     setActiveInstallStep(stepIndex);
     setCompletedInstallSteps((completedSteps) =>

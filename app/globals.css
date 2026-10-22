@@ -103,7 +103,7 @@ img{max-width:100%}
 .hero h1{max-width:600px;font-size:52px}
 .hero__text{max-width:520px;margin:20px 0 0;font-size:16px;line-height:1.7;color:#F4E3E0}
 .hero__actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
-/* Tombol sekunder berada di atas foto gelap, jadi描-nya harus terang. */
+/* Tombol sekunder berada di atas foto gelap, jadi teksnya harus terang. */
 .hero .outline-button{border-color:rgba(255,255,255,.55);color:#fff}
 .hero .outline-button:hover{background:#fff;color:var(--maroon-deep);border-color:#fff}
 
