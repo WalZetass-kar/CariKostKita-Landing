@@ -24,7 +24,7 @@ import os
 import shutil
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 # ---------------------------------------------------------------------------
 # Konstanta konten mockup (harus ikut rilis yang sedang Accuracy)
@@ -280,11 +280,11 @@ def render_hero_ui(active_category="Semua"):
         ],
         "Putra": [
             ("Kost Sinar Jaya Marpoyan", "Rp 640.000", "KOST PUTRA", "4.8 (39)", "Marpoyan Damai, Dekat UIR (500m)", ["Kasur Busa", "Lemari", "Free Listrik", "Dapur"], "assets/kost-room-2.jpg", (25, 60, 115)),
-            ("Kost Garuda Mandiri", "Rp 550.000", "KOST PUTRA", "4.7 (31)", "Tuah Madani, Area UNRI Rimbo Panjang", ["Kasur", "Lemari", "Parkir Motor", "Air Bersih"], "assets/kost-room-3.jpg", (25, 60, 115)),
+            ("Kost Garuda Mandiri", "Rp 550.000", "KOST PUTRA", "4.7 (31)", "Tuah Madani, Area UNRI Rimbo Panjang", ["Kasur", "Lemari", "Parkir Motor", "Air Bersih"], "assets/kost-room-4.jpg", (25, 60, 115)),
         ],
         "Campur": [
-            ("Kost D'Gading Exclusive", "Rp 1.200.000", "KOST CAMPUR", "4.9 (53)", "Bukit Raya, Dekat Jl. Sudirman", ["AC Dingin", "Water Heater", "Kasur King", "Parkir Mobil"], "assets/kost-room-4.jpg", (18, 95, 60)),
-            ("Pavilion Sudirman Suite", "Rp 1.400.000", "KOST CAMPUR", "5.0 (18)", "Tengah Kota Pekanbaru, Akses Mall", ["Fully Furnished", "Smart Lock", "Balkon", "WiFi 100M"], "assets/kost-room-1.jpg", (18, 95, 60)),
+            ("Kost D'Gading Exclusive", "Rp 1.200.000", "KOST CAMPUR", "4.9 (53)", "Bukit Raya, Dekat Jl. Sudirman", ["AC Dingin", "Water Heater", "Kasur King", "Parkir Mobil"], "assets/kost-room-5.jpg", (18, 95, 60)),
+            ("Pavilion Sudirman Suite", "Rp 1.400.000", "KOST CAMPUR", "5.0 (18)", "Tengah Kota Pekanbaru, Akses Mall", ["Fully Furnished", "Smart Lock", "Balkon", "WiFi 100M"], "assets/kost-room-6.jpg", (18, 95, 60)),
         ],
     }
     cards = all_listings.get(active_category, all_listings["Semua"])
@@ -310,7 +310,16 @@ def render_hero_ui(active_category="Semua"):
         draw.text((115, card_y + 38), tag, font=f_card_tag, fill=(255, 255, 255, 255))
 
         rating_w = text_width(draw, rating, f_card_tag) + 44
-        draw_rounded_rect(draw, [990 - rating_w, card_y + 25, 990, card_y + 88], radius=16, fill=(255, 255, 255, 245))
+        # Lencana rating duduk di atas foto. Tanpa garis tepi, lencana putih
+        # menghilang saat fotonya berlatar terang (dinding krem).
+        draw_rounded_rect(
+            draw,
+            [990 - rating_w, card_y + 25, 990, card_y + 88],
+            radius=16,
+            fill=(255, 255, 255, 248),
+            outline=(194, 184, 171, 255),
+            width=2,
+        )
         draw.text((990 - rating_w + 22, card_y + 38), rating, font=f_card_tag, fill=BURGUNDY)
 
         t_y = card_y + 390
@@ -333,9 +342,12 @@ def render_install_step1():
     f_sub = get_font(34, bold=False)
     f_btn = get_font(38, bold=True)
 
-    # Address bar digeser ke kanan agar tepi kirinya tidak terpotong mask layar.
-    draw_rounded_rect(draw, [95, 180, 1020, 270], radius=24, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
-    draw.text((135, 205), "carikostkita.id/download", font=get_font(36, bold=False), fill=(100, 90, 85, 255))
+    # Address bar dimulai dari luar kanvas supaya tepi kirinya terpotong
+    # mask layar. Kalau dimulai di dalam kanvas, sisa sudut lengkungnya
+    # tampak sebagai garis samar di kiri atas mockup. Address bar browser
+    # sungguhan memang menempel ke tepi layar.
+    draw_rounded_rect(draw, [-60, 180, 1000, 270], radius=24, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
+    draw.text((205, 205), "carikostkita.id/download", font=get_font(36, bold=False), fill=(100, 90, 85, 255))
 
     card_top = 460
     draw_rounded_rect(draw, [60, card_top, 1020, card_top + 1050], radius=40, fill=(255, 255, 255, 255), outline=(220, 212, 200, 255), width=2)
@@ -370,16 +382,52 @@ def render_install_step1():
 
     draw_step_badge(draw, "LANGKAH 1 DARI 4", green=False)
 
-    draw_bottom_nav(draw, W, H)
+    # Halaman browser: bukan halaman aplikasi, jadi tanpa nav bar aplikasi.
+    draw_rounded_rect(draw, [120, 1660, 960, 1880], radius=28, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
+    draw.text((170, 1710), "Tentang unduhan ini", font=get_font(38, bold=True), fill=INK)
+    draw.text((170, 1770), "CariKostKita adalah aplikasi pencarian kost untuk anak kost.",
+              font=get_font(30, bold=False), fill=(120, 110, 105, 255))
+    draw.text((170, 1815), "Unduh resmi tersedia di halaman ini dan GitHub.",
+              font=get_font(30, bold=False), fill=(120, 110, 105, 255))
     return ui
 
 
 def render_install_step2():
+    """Layar peringatan "File mungkin berbahaya?" milik Android.
+
+    Dua hal yang sebelumnya salah:
+
+    1. Scrim gelap ditulis langsung ke kanvas RGBA dengan
+       ``draw.rectangle(..., fill=(0, 0, 0, 85))``. ImageDraw menulis piksel,
+       bukan mencampur, jadi seluruh layar jadi hitam transparan dan
+       tampil hampir hitam. Scrim sekarang dipakai alpha_composite.
+    2. Nav bar aplikasi digambar di atas layar sistem. Layar peringatan
+       Android bukan bagian dari aplikasi, jadi nav bar tidak boleh ada.
+       Latar sekarang berupa halaman unduhan di browser.
+    """
     W, H = CANVAS_W, CANVAS_H
     ui = Image.new("RGBA", (W, H), (248, 245, 240, 255))
     draw = ImageDraw.Draw(ui)
     draw_status_bar(draw, W)
-    draw.rectangle([0, 0, W, H], fill=(0, 0, 0, 85))
+
+    # Latar: halaman unduhan di browser.
+    draw_rounded_rect(draw, [-60, 180, 1000, 270], radius=24, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
+    draw.text((205, 205), "carikostkita.id/download", font=get_font(36, bold=False), fill=(100, 90, 85, 255))
+    draw_rounded_rect(draw, [120, 420, 960, 1560], radius=40, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
+    page_title = "CariKostKita.apk"
+    w = text_width(draw, page_title, get_font(52, bold=True))
+    draw.text(((W - w) // 2, 520), page_title, font=get_font(52, bold=True), fill=INK)
+    page_sub = f"Versi {APP_VERSION} \u2022 {APK_SIZE}"
+    w = text_width(draw, page_sub, get_font(34, bold=False))
+    draw.text(((W - w) // 2, 600), page_sub, font=get_font(34, bold=False), fill=(120, 110, 105, 255))
+    draw_rounded_rect(draw, [330, 720, 750, 830], radius=28, fill=BURGUNDY)
+    w = text_width(draw, "Unduh APK", get_font(38, bold=True))
+    draw.text(((W - w) // 2, 760), "Unduh APK", font=get_font(38, bold=True), fill=(255, 255, 255, 255))
+
+    # Scrim: komposit alpha yang benar, bukan piksel yang ditimpa.
+    scrim = Image.new("RGBA", (W, H), (0, 0, 0, 165))
+    ui = Image.alpha_composite(ui, scrim)
+    draw = ImageDraw.Draw(ui)
 
     f_title = get_font(48, bold=True)
     f_body = get_font(34, bold=False)
@@ -420,8 +468,7 @@ def render_install_step2():
     draw.text((750 - w // 2, d_top + 682), label, font=f_btn, fill=(255, 255, 255, 255))
 
     draw_step_badge(draw, "LANGKAH 2 DARI 4", green=False)
-
-    draw_bottom_nav(draw, W, H)
+    # Tanpa nav bar aplikasi: ini layar sistem Android, bukan halaman aplikasi.
     return ui
 
 
@@ -441,8 +488,10 @@ def render_install_step3():
     w = text_width(draw, sub, f_sub)
     draw.text(((W - w) // 2, 265), sub, font=f_sub, fill=(120, 110, 105, 255))
 
+    # Layar setelan Android memenuhi tinggi layar, jadi kartunya ikut
+    # memanjang ke bawah (dulunav bar aplikasi mengisi bagian bawah).
     s_top = 400
-    draw_rounded_rect(draw, [60, s_top, 1020, s_top + 1050], radius=38, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
+    draw_rounded_rect(draw, [60, s_top, 1020, 1840], radius=38, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
 
     draw_rounded_rect(draw, [440, s_top + 80, 640, s_top + 280], radius=45, fill=BURGUNDY)
     draw.rectangle([510, s_top + 140, 570, s_top + 220], fill=(255, 255, 255, 255))
@@ -472,8 +521,7 @@ def render_install_step3():
     draw.text(((W - w) // 2, s_top + 820), label, font=f_sub, fill=(120, 110, 105, 255))
 
     draw_step_badge(draw, "LANGKAH 3 DARI 4", green=False)
-
-    draw_bottom_nav(draw, W, H)
+    # Layar setelan Android: tanpa nav bar aplikasi.
     return ui
 
 
@@ -487,8 +535,10 @@ def render_install_step4():
     f_sub = get_font(34, bold=False)
     f_btn = get_font(38, bold=True)
 
+    # Layar "Aplikasi Terpasang!" milik Android, jadi kartunya memanjang
+    # ke bawah tanpa nav bar aplikasi.
     card_top = 420
-    draw_rounded_rect(draw, [60, card_top, 1020, card_top + 1180], radius=44, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
+    draw_rounded_rect(draw, [60, card_top, 1020, 1840], radius=44, fill=(255, 255, 255, 255), outline=(225, 218, 206, 255), width=2)
 
     draw.ellipse([400, card_top + 80, 680, card_top + 360], fill=GREEN_SOFT)
     draw.ellipse([430, card_top + 110, 650, card_top + 330], fill=GREEN)
@@ -521,8 +571,7 @@ def render_install_step4():
     draw.text(((W - w) // 2, card_top + 1020), label, font=f_btn, fill=(255, 255, 255, 255))
 
     draw_step_badge(draw, "LANGKAH 4 DARI 4", green=True)
-
-    draw_bottom_nav(draw, W, H)
+    # Layar sistem Android: tanpa nav bar aplikasi.
     return ui
 
 
@@ -585,9 +634,15 @@ def composite_and_crop(ui_image, output_path):
     warped_arr = np.array(warped_ui)
     res[screen_mask] = warped_arr[screen_mask]
 
-    # Kilau kaca
+    # Kilau kaca. Mask sheen lama di-hard-clip, jadi batasnya berupa garis
+    # tajam yang memotong progress bar dan tombol jadi dua warna. Mask-nya
+    # kini diblur supaya transisinya seperti pantulan kaca yang wajar.
     screen_gray = np.mean(orig_arr, axis=2)
-    sheen = np.clip((screen_gray - 210) * 1.4, 0, 40).astype(np.uint8)
+    sheen = np.clip((screen_gray - 210) * 1.4, 0, 40)
+    sheen = np.asarray(
+        Image.fromarray(sheen.astype(np.uint8)).filter(ImageFilter.GaussianBlur(26)),
+        dtype=np.float32,
+    )
     for c in range(3):
         res[screen_mask, c] = np.clip(
             res[screen_mask, c].astype(int) + sheen[screen_mask], 0, 255
