@@ -9,7 +9,8 @@
     "lint": "next lint",
     "verify:contract": "node scripts/verify_fastapi_contract.mjs",
     "verify:encoding": "node scripts/scan-mojibake.mjs",
-    "render:mockups": "python scripts/render_all_premium.py"
+    "render:mockups": "python scripts/render_all_premium.py",
+    "optimize:images": "python scripts/optimize_images.py"
   },
   "dependencies": {
     "@fortawesome/free-brands-svg-icons": "^7.3.1",

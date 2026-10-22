@@ -1,7 +1,7 @@
 """
 Generator mockup 3D CariKostKita.
 
-Render UI aplikasi ke dalam bingkai HP (public/mockup.png) memakai
+Render UI aplikasi ke dalam bingkai HP (assets/mockup-frame.png) memakai
 transformasi perspektif, lalu memotong hasilnya tightly ke bodi HP.
 
 Kebutuhan:
@@ -59,6 +59,11 @@ GREEN = (37, 211, 102, 255)
 GREEN_DARK = (22, 101, 52, 255)
 GREEN_SOFT = (220, 252, 231, 255)
 PAGE_BG = (250, 248, 245, 255)
+
+
+#: Kualitas WebP untuk mockup. 90 membuat teks kecil tetap tajam
+#: pada ukuran tampil 320px (render 990px di-downscale ~3x).
+WEBP_QUALITY = 90
 
 
 def get_font(size, bold=False):
@@ -266,20 +271,20 @@ def render_hero_ui(active_category="Semua"):
 
     all_listings = {
         "Semua": [
-            ("Kost Melati Indah Panam", "Rp 700.000", "KOST PUTRI", "4.9 (48)", "Panam, Dekat Kampus UNRI (300m)", ["WiFi Cepat", "K. Mandi Dalam", "AC / Kipas", "Parkir Luas"], "public/kost-room-1.jpg", (109, 8, 8)),
-            ("Kost Sinar Jaya Marpoyan", "Rp 640.000", "KOST PUTRA", "4.8 (39)", "Marpoyan Damai, Dekat UIR (500m)", ["Kasur Busa", "Lemari", "Free Listrik", "Dapur"], "public/kost-room-2.jpg", (25, 60, 115)),
+            ("Kost Melati Indah Panam", "Rp 700.000", "KOST PUTRI", "4.9 (48)", "Panam, Dekat Kampus UNRI (300m)", ["WiFi Cepat", "K. Mandi Dalam", "AC / Kipas", "Parkir Luas"], "assets/kost-room-1.jpg", (109, 8, 8)),
+            ("Kost Sinar Jaya Marpoyan", "Rp 640.000", "KOST PUTRA", "4.8 (39)", "Marpoyan Damai, Dekat UIR (500m)", ["Kasur Busa", "Lemari", "Free Listrik", "Dapur"], "assets/kost-room-2.jpg", (25, 60, 115)),
         ],
         "Putri": [
-            ("Kost Melati Indah Panam", "Rp 700.000", "KOST PUTRI", "4.9 (48)", "Panam, Dekat Kampus UNRI (300m)", ["WiFi Cepat", "K. Mandi Dalam", "AC / Kipas", "Parkir Luas"], "public/kost-room-1.jpg", (109, 8, 8)),
-            ("Kost Anggrek Asri Riau", "Rp 800.000", "KOST PUTRI", "4.9 (27)", "Sukajadi, Dekat Pusat Kota (200m)", ["Security 24J", "WiFi 50M", "Dapur Bersih", "CCTV"], "public/kost-room-3.jpg", (109, 8, 8)),
+            ("Kost Melati Indah Panam", "Rp 700.000", "KOST PUTRI", "4.9 (48)", "Panam, Dekat Kampus UNRI (300m)", ["WiFi Cepat", "K. Mandi Dalam", "AC / Kipas", "Parkir Luas"], "assets/kost-room-1.jpg", (109, 8, 8)),
+            ("Kost Anggrek Asri Riau", "Rp 800.000", "KOST PUTRI", "4.9 (27)", "Sukajadi, Dekat Pusat Kota (200m)", ["Security 24J", "WiFi 50M", "Dapur Bersih", "CCTV"], "assets/kost-room-3.jpg", (109, 8, 8)),
         ],
         "Putra": [
-            ("Kost Sinar Jaya Marpoyan", "Rp 640.000", "KOST PUTRA", "4.8 (39)", "Marpoyan Damai, Dekat UIR (500m)", ["Kasur Busa", "Lemari", "Free Listrik", "Dapur"], "public/kost-room-2.jpg", (25, 60, 115)),
-            ("Kost Garuda Mandiri", "Rp 550.000", "KOST PUTRA", "4.7 (31)", "Tuah Madani, Area UNRI Rimbo Panjang", ["Kasur", "Lemari", "Parkir Motor", "Air Bersih"], "public/kost-room-3.jpg", (25, 60, 115)),
+            ("Kost Sinar Jaya Marpoyan", "Rp 640.000", "KOST PUTRA", "4.8 (39)", "Marpoyan Damai, Dekat UIR (500m)", ["Kasur Busa", "Lemari", "Free Listrik", "Dapur"], "assets/kost-room-2.jpg", (25, 60, 115)),
+            ("Kost Garuda Mandiri", "Rp 550.000", "KOST PUTRA", "4.7 (31)", "Tuah Madani, Area UNRI Rimbo Panjang", ["Kasur", "Lemari", "Parkir Motor", "Air Bersih"], "assets/kost-room-3.jpg", (25, 60, 115)),
         ],
         "Campur": [
-            ("Kost D'Gading Exclusive", "Rp 1.200.000", "KOST CAMPUR", "4.9 (53)", "Bukit Raya, Dekat Jl. Sudirman", ["AC Dingin", "Water Heater", "Kasur King", "Parkir Mobil"], "public/kost-room-4.jpg", (18, 95, 60)),
-            ("Pavilion Sudirman Suite", "Rp 1.400.000", "KOST CAMPUR", "5.0 (18)", "Tengah Kota Pekanbaru, Akses Mall", ["Fully Furnished", "Smart Lock", "Balkon", "WiFi 100M"], "public/kost-room-1.jpg", (18, 95, 60)),
+            ("Kost D'Gading Exclusive", "Rp 1.200.000", "KOST CAMPUR", "4.9 (53)", "Bukit Raya, Dekat Jl. Sudirman", ["AC Dingin", "Water Heater", "Kasur King", "Parkir Mobil"], "assets/kost-room-4.jpg", (18, 95, 60)),
+            ("Pavilion Sudirman Suite", "Rp 1.400.000", "KOST CAMPUR", "5.0 (18)", "Tengah Kota Pekanbaru, Akses Mall", ["Fully Furnished", "Smart Lock", "Balkon", "WiFi 100M"], "assets/kost-room-1.jpg", (18, 95, 60)),
         ],
     }
     cards = all_listings.get(active_category, all_listings["Semua"])
@@ -543,7 +548,7 @@ def build_screen_mask(size):
 
 
 def composite_and_crop(ui_image, output_path):
-    mockup = Image.open("public/mockup.png").convert("RGBA")
+    mockup = Image.open("assets/mockup-frame.png").convert("RGBA")
     W_MOCK, H_MOCK = mockup.size
 
     dst_pts = SCREEN_QUAD
@@ -552,7 +557,7 @@ def composite_and_crop(ui_image, output_path):
 
     warped_ui = ui_image.transform((W_MOCK, H_MOCK), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
 
-    mockup_orig = Image.open("public/mockup.jpg").convert("RGB")
+    mockup_orig = Image.open("assets/mockup-frame.jpg").convert("RGB")
     orig_arr = np.array(mockup_orig)
 
     screen_mask = build_screen_mask((W_MOCK, H_MOCK))
@@ -590,20 +595,27 @@ def composite_and_crop(ui_image, output_path):
 
     full_img = Image.fromarray(res)
     cropped_img = full_img.crop(CROP_BOX)
-    cropped_img.save(output_path, "PNG")
-    print(f"  {os.path.basename(output_path)}  {cropped_img.size}")
+    cropped_img.save(output_path, "WEBP", quality=WEBP_QUALITY, method=6)
+    print(
+        "  %s  %s  %d KB"
+        % (
+            os.path.basename(output_path),
+            cropped_img.size,
+            os.path.getsize(output_path) // 1024,
+        )
+    )
 
 
 if __name__ == "__main__":
     os.chdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     print("Merender mockup hero (versi %s, %s)..." % (APP_VERSION, APK_SIZE))
     for cat in ["Semua", "Putri", "Putra", "Campur"]:
-        composite_and_crop(render_hero_ui(cat), f"public/mockup-hero-{cat.lower()}.png")
+        composite_and_crop(render_hero_ui(cat), f"public/mockup-hero-{cat.lower()}.webp")
 
     print("Merender mockup langkah instalasi...")
-    composite_and_crop(render_install_step1(), "public/mockup-install-1.png")
-    composite_and_crop(render_install_step2(), "public/mockup-install-2.png")
-    composite_and_crop(render_install_step3(), "public/mockup-install-3.png")
-    composite_and_crop(render_install_step4(), "public/mockup-install-4.png")
+    composite_and_crop(render_install_step1(), "public/mockup-install-1.webp")
+    composite_and_crop(render_install_step2(), "public/mockup-install-2.webp")
+    composite_and_crop(render_install_step3(), "public/mockup-install-3.webp")
+    composite_and_crop(render_install_step4(), "public/mockup-install-4.webp")
 
     print("Selesai.")

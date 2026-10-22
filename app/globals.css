@@ -87,7 +87,7 @@ img{max-width:100%}
 .hero{min-height:660px;position:relative;overflow:hidden;color:#fff;display:grid;align-items:center}
 .hero__city{
   position:absolute;inset:0;
-  background-image:url('/landmark-pekanbaru.png');
+  background-image:url('/landmark-pekanbaru.webp');
   background-size:cover;background-position:center;
 }
 /* Overlay maroon solid (bukan gradient) supaya kontras teks selalu aman. */

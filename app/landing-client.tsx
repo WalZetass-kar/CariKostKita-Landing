@@ -807,12 +807,12 @@ export default function LandingClient({
                   appConfig.heroImageUrl && !heroMockupFailed
                     ? withRevision(appConfig.heroImageUrl, settingsRevision)
                     : phoneFilter === 'Putri'
-                    ? '/mockup-hero-putri.png'
+                    ? '/mockup-hero-putri.webp'
                     : phoneFilter === 'Putra'
-                    ? '/mockup-hero-putra.png'
+                    ? '/mockup-hero-putra.webp'
                     : phoneFilter === 'Campur'
-                    ? '/mockup-hero-campur.png'
-                    : '/mockup-hero-semua.png'
+                    ? '/mockup-hero-campur.webp'
+                    : '/mockup-hero-semua.webp'
                 }
                 alt={`Tampilan aplikasi ${appConfig.appName} di layar smartphone`}
                 className="hero-3d-img"
@@ -945,8 +945,8 @@ export default function LandingClient({
               <img
                 src={
                   installMockupFailed
-                    ? '/mockup-install-1.png'
-                    : `/mockup-install-${activeInstallStep + 1}.png`
+                    ? '/mockup-install-1.webp'
+                    : `/mockup-install-${activeInstallStep + 1}.webp`
                 }
                 alt={`Simulasi langkah ${activeInstallStep + 1}: ${
                   (activeInstallSteps[activeInstallStep]?.t) || 'Langkah Instalasi'
