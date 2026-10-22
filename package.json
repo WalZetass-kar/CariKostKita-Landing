@@ -9,7 +9,7 @@
     "lint": "next lint",
     "verify:contract": "node scripts/verify_fastapi_contract.mjs",
     "verify:encoding": "node scripts/scan-mojibake.mjs",
-    "render:mockups": "python scripts/render_all_premium.py",
+    "render:mockups": "python scripts/render_phone_mockup.py",
     "render:rooms": "python scripts/render_room_photos.py",
     "optimize:images": "python scripts/optimize_images.py"
   },
