@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { DM_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import '@fortawesome/fontawesome-svg-core/styles.css';
 import { config } from '@fortawesome/fontawesome-svg-core';
 import './globals.css';
@@ -7,10 +7,10 @@ import { loadLandingSettings, readSetting } from '../lib/landing-server';
 
 config.autoAddCss = false;
 
-const dmSans = DM_Sans({
+const jakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-dm-sans',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jakarta',
   display: 'swap',
 });
 
@@ -73,8 +73,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="id" className={`scroll-smooth ${dmSans.variable}`}>
-      <body className={`${dmSans.className} antialiased bg-[#FBFAF4] text-[#261B19]`}>
+    <html lang="id" className={`scroll-smooth ${jakartaSans.variable}`}>
+      <body className={`${jakartaSans.className} antialiased bg-[#FBFAF4] text-[#261B19]`}>
         {children}
       </body>
     </html>

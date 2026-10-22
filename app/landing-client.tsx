@@ -580,7 +580,13 @@ export default function LandingClient({
     .map((item) => [item.question || item.q || '', item.answer || item.a || ''] as [string, string]);
 
   return (
-    <>
+    <div
+      style={
+        {
+          '--maroon': appConfig.brandColor || '#790F13',
+        } as React.CSSProperties
+      }
+    >
       <a className="skip-link" href="#konten-utama">Lewati ke konten utama</a>
       {/* Header */}
       <header className="site-header">
@@ -636,7 +642,7 @@ export default function LandingClient({
           </nav>
         )}
       </header>
-      <main id="konten-utama" style={{ '--burgundy': appConfig.brandColor || '#6D0808' } as React.CSSProperties}>
+      <main id="konten-utama">
       {/* Scroll Progress Bar */}
       <div
         className="scroll-progress"
@@ -722,35 +728,33 @@ export default function LandingClient({
               </a>
             </div>
 
-            {/* Spec Capsule Under CTA */}
-            <div style={{ marginTop: 14, fontSize: 11, color: '#f7d9c9', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Informasi pendukung: versi, syarat perangkat, ukuran, dan
+                tautan panduan. Formatting diambil dari kelas supaya
+                tetap konsisten di semua lebar layar. */}
+            <div className="hero-spec">
               <span>
                 <FontAwesomeIcon icon={faCube} />
-                {appConfig.versionName || 'v1.0.1'}
+                {appConfig.versionName || 'v1.1.1'}
               </span>
-              <span>•</span>
+              <i className="dot" aria-hidden="true" />
               <span>
                 <FontAwesomeIcon icon={faAndroid} />
                 {appConfig.minAndroid || 'Android 8.0+'}
               </span>
-              <span>•</span>
+              <i className="dot" aria-hidden="true" />
               <span>
                 <FontAwesomeIcon icon={faBolt} />
-                {appConfig.apkSize || '6.9 MB'}
+                {appConfig.apkSize || '3.3 MB'}
               </span>
-              <span>•</span>
+              <i className="dot" aria-hidden="true" />
               <span>
                 <FontAwesomeIcon icon={faCheck} />
                 {appConfig.heroAdFreeText || 'Bebas Iklan'}
               </span>
               {appConfig.securityModalActive && (
                 <>
-                  <span>•</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(true)}
-                    style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', textDecoration: 'underline', cursor: 'pointer', color: '#fff' }}
-                  >
+                  <i className="dot" aria-hidden="true" />
+                  <button type="button" onClick={() => setShowModal(true)}>
                     Panduan Pasang APK
                   </button>
                 </>
@@ -970,18 +974,12 @@ export default function LandingClient({
                   onClick={() => handleInstallStepClick(idx)}
                   disabled={completedInstallSteps.includes(idx)}
                   aria-pressed={activeInstallStep === idx}
+                  aria-current={activeInstallStep === idx ? 'step' : undefined}
                   aria-label={`${stepItem.t}${completedInstallSteps.includes(idx) ? ' (sudah dipilih)' : ''}`}
                 >
                   <span>{stepItem.n}</span>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-                      <h3>{stepItem.t}</h3>
-                      {activeInstallStep === idx && (
-                        <small style={{ fontSize: 11, lineHeight: 1.4, color: 'var(--burgundy, #6D0808)', fontWeight: 700, background: '#f5e8e8', padding: '2px 6px', borderRadius: 6 }}>
-                          Aktif
-                        </small>
-                      )}
-                    </div>
+                    <h3>{stepItem.t}</h3>
                     <p>{stepItem.d}</p>
                   </div>
                 </button>
@@ -1000,7 +998,7 @@ export default function LandingClient({
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--maroon)', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
                 >
                   Lihat Panduan Dialog Keamanan Android <FontAwesomeIcon icon={faArrowRight} />
                 </button>
@@ -1019,7 +1017,7 @@ export default function LandingClient({
             <p className="intro">
               {appConfig.ownerIntro || `Daftarkan kost Anda di ${appConfig.appName} agar lebih mudah ditemukan calon penyewa mahasiswa dan pekerja di ${appConfig.targetCity} tanpa komisi perantara.`}
             </p>
-            <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 28, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <a
                 className="download"
                 style={{ background: '#25D366' }}
@@ -1065,22 +1063,22 @@ export default function LandingClient({
               </p>
 
               {/* Dynamic Company/Contact Info */}
-              <div style={{ marginTop: 14, fontSize: 13, display: 'flex', flexDirection: 'column', gap: 8, color: '#52433e' }}>
+              <div style={{ marginTop: 16, fontSize: 14, display: 'flex', flexDirection: 'column', gap: 10, color: 'var(--muted)' }}>
                 {appConfig.address && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faMapPin} style={{ color: 'var(--burgundy, #6D0808)', fontSize: 14 }} />
+                    <FontAwesomeIcon icon={faMapPin} style={{ color: 'var(--maroon)', fontSize: 15 }} />
                     <span>{appConfig.address}</span>
                   </div>
                 )}
                 {appConfig.contactPhone && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faPhone} style={{ color: 'var(--burgundy, #6D0808)', fontSize: 14 }} />
+                    <FontAwesomeIcon icon={faPhone} style={{ color: 'var(--maroon)', fontSize: 15 }} />
                     <span>{appConfig.contactPhone}</span>
                   </div>
                 )}
                 {appConfig.supportEmail && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faEnvelope} style={{ color: 'var(--burgundy, #6D0808)', fontSize: 14 }} />
+                    <FontAwesomeIcon icon={faEnvelope} style={{ color: 'var(--maroon)', fontSize: 15 }} />
                     <span>{appConfig.supportEmail}</span>
                   </div>
                 )}
@@ -1192,6 +1190,7 @@ export default function LandingClient({
         rel="noopener noreferrer"
         className="floating-wa"
         title="Chat WhatsApp Bantuan"
+        aria-label="Chat WhatsApp Bantuan"
       >
         <FontAwesomeIcon icon={faWhatsapp} size="lg" />
         <span>Bantuan WhatsApp</span>
@@ -1235,7 +1234,7 @@ export default function LandingClient({
               </div>
             )}
             {appConfig.popupTitle && (
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--burgundy, #6D0808)', marginBottom: 8 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--maroon)', marginBottom: 8 }}>
                 {appConfig.popupTitle}
               </h3>
             )}
@@ -1281,7 +1280,7 @@ export default function LandingClient({
             <button type="button" className="modal-close" onClick={() => setShowModal(false)} aria-label="Tutup dialog panduan">
               <FontAwesomeIcon icon={faXmark} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--maroon)', fontWeight: 700, fontSize: 16 }}>
               <FontAwesomeIcon icon={faTriangleExclamation} color="#D97706" />
               <span>{appConfig.securityModalTitle || 'Panduan Dialog Download Android'}</span>
             </div>
@@ -1318,7 +1317,7 @@ export default function LandingClient({
             <button type="button" className="modal-close" onClick={() => setLegalModal({ open: false, title: '', content: '' })} aria-label="Tutup dialog informasi">
               <FontAwesomeIcon icon={faXmark} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--maroon)', fontWeight: 700, fontSize: 16 }}>
               <FontAwesomeIcon icon={faFileLines} />
               <span>{legalModal.title}</span>
             </div>
@@ -1424,6 +1423,6 @@ export default function LandingClient({
         </div>
         <div className="shell copyright">{appConfig.footerCopyright || `© 2026 ${appConfig.appName}. All rights reserved.`}</div>
       </footer>
-    </>
+    </div>
   );
 }
