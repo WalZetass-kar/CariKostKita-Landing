@@ -147,7 +147,7 @@ export const defaultConfig: AppConfigState = {
   tagline: 'Temukan Kost Nyaman & Terpercaya di Pekanbaru',
   heroText: 'CariKostKita hadir untuk memudahkan kamu menemukan kost terbaik di Pekanbaru. Dengan tampilan yang simpel, cepat, dan lengkap, semua kebutuhan kost ada di genggaman.',
   versionName: 'v1.1.1',
-  releaseNotes: 'Rilis beta resmi CariKostKita untuk mahasiswa dan warga Pekanbaru.',
+  releaseNotes: 'Rilis resmi CariKostKita v1.1.1 untuk mahasiswa dan warga Pekanbaru.',
   supportEmail: 'support@carikostkita.id',
   contactPhone: '0761-555-0123',
   address: 'Jl. Soekarno Hatta No. 1, Pekanbaru, Riau',
