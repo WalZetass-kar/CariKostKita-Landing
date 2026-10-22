@@ -32,7 +32,7 @@ export async function GET(
         const stats = fs.statSync(filePath);
         if (stats.isFile() && stats.size > 0) {
           const fileBuffer = fs.readFileSync(filePath);
-          const downloadName = safeFilename.endsWith(".apk") ? safeFilename : "CariKostKita-v1.0.1.apk";
+          const downloadName = safeFilename.endsWith(".apk") ? safeFilename : "CariKostKita-v1.1.1-release.apk";
           return new NextResponse(fileBuffer, {
             status: 200,
             headers: {
