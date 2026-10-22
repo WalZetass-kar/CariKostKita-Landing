@@ -94,7 +94,7 @@ img{max-width:100%}
 .hero__city:after{content:'';position:absolute;inset:0;background:rgba(58,9,11,.66)}
 .hero__content{
   position:relative;z-index:1;
-  display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:center;gap:56px;
+  display:grid;grid-template-columns:minmax(0,1fr) 420px;align-items:center;gap:56px;
   padding:72px 0;
 }
 .eyebrow{margin:0 0 12px;color:var(--maroon);font-size:12px;letter-spacing:.14em;font-weight:800}
@@ -103,6 +103,9 @@ img{max-width:100%}
 .hero h1{max-width:600px;font-size:52px}
 .hero__text{max-width:520px;margin:20px 0 0;font-size:16px;line-height:1.7;color:#F4E3E0}
 .hero__actions{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+/* Tombol sekunder berada di atas foto gelap, jadi描-nya harus terang. */
+.hero .outline-button{border-color:rgba(255,255,255,.55);color:#fff}
+.hero .outline-button:hover{background:#fff;color:var(--maroon-deep);border-color:#fff}
 
 /* Baris informasi ringkas di bawah CTA */
 .hero-spec{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:20px;font-size:13px;color:#F0D7D4}
@@ -121,14 +124,19 @@ img{max-width:100%}
   position:absolute;z-index:3;padding:10px 14px;
   border:1px solid rgba(255,255,255,.26);border-radius:10px;
   background:rgba(58,9,11,.78);color:#fff;font-size:13px;font-weight:700;
-  display:flex;align-items:center;gap:8px;max-width:280px;
+  display:flex;align-items:center;gap:8px;max-width:210px;line-height:1.45;
 }
-.soft-card--top{top:44px;left:-12px}
-.soft-card--bottom{right:-12px;bottom:56px}
+/* Mockup HP miring, sudut kiri-atas dan kanan-bawahnya kosong.
+   Kartu diletakkan di sana supaya tidak menutupi konten layar. */
+.soft-card--top{top:-22px;left:-50px;max-width:210px}
+.soft-card--bottom{right:-50px;bottom:104px;max-width:210px}
 
 /* Mockup HP */
-.hero__visual{height:600px;position:relative;display:flex;justify-content:center;align-items:center}
-.hero-3d-phone{position:relative;width:330px;height:590px;z-index:2;display:flex;align-items:center;justify-content:center}
+.hero__visual{
+  height:620px;position:relative;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;gap:22px;
+}
+.hero-3d-phone{position:relative;width:320px;height:576px;z-index:2;display:flex;align-items:center;justify-content:center}
 .hero-3d-img{
   width:100%;height:100%;object-fit:contain;display:block;
   filter:drop-shadow(0 12px 24px rgba(20,4,4,.38));
@@ -136,7 +144,7 @@ img{max-width:100%}
 
 /* Chip filter kategori */
 .hero-filter-selector{
-  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  position:static;transform:none;max-width:100%;
   display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;
   background:var(--card);padding:6px;border-radius:var(--r-pill);
   border:1px solid var(--line);box-shadow:var(--shadow-1);
@@ -158,7 +166,7 @@ img{max-width:100%}
 .intro{max-width:620px;margin:12px 0 0;color:var(--muted);font-size:15px;line-height:1.7}
 
 /* Kartu fitur */
-.feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:32px}
+.feature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:32px}
 .feature-card{
   min-height:206px;padding:24px 22px;
   border:1px solid var(--line);border-radius:var(--r-card);
@@ -174,7 +182,7 @@ img{max-width:100%}
 .feature-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.65}
 
 /* Kartu kepercayaan (pra-rilis) */
-.trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:32px}
+.trust-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:32px}
 .trust-card{
   display:flex;gap:16px;align-items:flex-start;padding:22px;
   border:1px solid var(--line);border-radius:var(--r-card);
@@ -187,7 +195,7 @@ img{max-width:100%}
 
 /* ------------------------------------------------- Section cara instal */
 .install-section{background:var(--bone)}
-.install-layout{display:grid;grid-template-columns:.85fr 1.15fr;gap:56px;align-items:center}
+.install-layout{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:56px;align-items:center}
 .install-mockup-wrap{position:relative;display:flex;justify-content:center;align-items:center;min-height:540px}
 .install-3d-phone{position:relative;width:310px;height:556px;display:flex;align-items:center;justify-content:center}
 .install-3d-img{
@@ -219,7 +227,7 @@ img{max-width:100%}
 
 /* ------------------------------------------------ Section pemilik kost */
 .owner-section{background:var(--cream)}
-.owner-layout{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:64px}
+.owner-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:64px}
 .owner-layout .download{margin-top:0}
 .owner-layout ol{margin:0;padding:0;list-style:none}
 .owner-layout li{
@@ -235,7 +243,7 @@ img{max-width:100%}
 
 /* ----------------------------------------------- Tentang kami & FAQ */
 .about-section{background:var(--bone)}
-.about-layout{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
+.about-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:start}
 .about-card{display:grid;grid-template-columns:120px 1fr;gap:22px;align-items:start}
 .avatar{
   height:132px;display:flex;align-items:center;justify-content:center;
@@ -384,13 +392,14 @@ footer{background:var(--bone);color:var(--muted);border-top:1px solid var(--line
    Responsive
    ========================================================================= */
 @media (max-width:1024px){
-  .hero__content{grid-template-columns:minmax(0,1fr) 320px;gap:36px}
+  .hero__content{grid-template-columns:minmax(0,1fr) 340px;gap:32px}
   .hero h1{font-size:46px}
   .feature-grid{grid-template-columns:repeat(2,1fr)}
-  .install-layout,.about-layout{grid-template-columns:1fr;gap:40px}
-  .owner-layout{grid-template-columns:1fr;gap:32px}
+  .install-layout,.about-layout{grid-template-columns:minmax(0,1fr);gap:40px}
+  .owner-layout{grid-template-columns:minmax(0,1fr);gap:32px}
   .about-layout{gap:44px}
   .install-mockup-wrap{min-height:460px;order:2}
+  .hero__visual{height:560px}
   .install-3d-phone{width:270px;height:484px}
   .footer-grid{grid-template-columns:1fr 1fr;gap:32px}
   .footer-social{grid-column:1 / -1}
@@ -407,32 +416,32 @@ footer{background:var(--bone);color:var(--muted);border-top:1px solid var(--line
   .mobile-menu .download{margin-top:8px}
 
   .hero{min-height:auto}
-  .hero__content{grid-template-columns:1fr;padding:52px 0 36px;gap:0}
+  .hero__content{grid-template-columns:minmax(0,1fr);padding:52px 0 36px;gap:0}
   .hero h1{font-size:clamp(32px,8.4vw,38px);line-height:1.14;max-width:none}
   .hero__text{font-size:15px;margin-top:16px;max-width:none}
   .hero__actions{margin-top:26px;gap:10px}
-  .hero__actions>*{width:100%}
-  .hero-spec{gap:12px;font-size:13px;margin-top:18px}
+  .hero-spec{display:none}
   .trust-row{gap:10px 18px;font-size:13px}
-  .hero__visual{height:460px;margin-top:28px}
+  .hero__visual{height:auto;margin-top:28px;gap:18px}
   .hero-3d-phone{width:280px;height:500px}
   .soft-card{display:none}
   .hero-badges-static{display:flex}
-  .hero-filter-selector{position:static;transform:none;margin:20px auto 0;width:max-content}
+  .hero-filter-selector{width:100%;margin:20px auto 0}
+  .hero-filter-label{margin:0 2px 0 0}
 
   .section{padding:56px 0}
   .section h2,.final-cta h2{font-size:26px}
   .intro{margin-top:10px;font-size:15px}
-  .feature-grid{grid-template-columns:1fr;gap:14px;margin-top:26px}
+  .feature-grid{grid-template-columns:minmax(0,1fr);gap:14px;margin-top:26px}
   .feature-card{min-height:0;padding:20px}
   .feature-card h3{margin-top:16px}
-  .trust-grid{grid-template-columns:1fr;gap:14px}
+  .trust-grid{grid-template-columns:minmax(0,1fr);gap:14px}
   .trust-card{padding:20px}
-  .steps{grid-template-columns:1fr;gap:12px}
+  .steps{grid-template-columns:minmax(0,1fr);gap:12px}
   .install-mockup-wrap{min-height:400px}
   .install-3d-phone{width:250px;height:448px}
   .install-actions{gap:12px;align-items:flex-start}
-  .about-card{grid-template-columns:88px 1fr;gap:16px}
+  .about-card{grid-template-columns:88px minmax(0,1fr);gap:16px}
   .avatar{height:110px}
   .about-card h2{font-size:24px}
   .feedback{padding:56px 0}
@@ -440,7 +449,7 @@ footer{background:var(--bone);color:var(--muted);border-top:1px solid var(--line
   .final-cta__inner{align-items:flex-start;flex-direction:column;gap:24px;min-height:auto;padding:44px 0}
   .final-cta h2{font-size:26px}
   .final-cta .download{width:100%}
-  .footer-grid{grid-template-columns:1fr;gap:28px;padding:44px 0 20px}
+  .footer-grid{grid-template-columns:minmax(0,1fr);gap:28px;padding:44px 0 20px}
   .footer-grid nav{justify-content:flex-start;gap:12px 20px}
   .copyright{text-align:left;padding-bottom:96px}
   .floating-wa{bottom:16px;right:16px;padding:13px;gap:0}
@@ -452,9 +461,10 @@ footer{background:var(--bone);color:var(--muted);border-top:1px solid var(--line
 }
 
 @media (max-width:420px){
-  .hero__actions{display:grid;grid-template-columns:1fr}
+  .hero__actions{display:grid;grid-template-columns:minmax(0,1fr)}
+  .hero__actions>*{width:100%}
   .trust-row{font-size:12px}
-  .hero__visual{height:420px}
+  .hero__visual{height:auto}
   .hero-3d-phone{width:250px;height:446px}
   .install-3d-phone{width:230px;height:412px}
   .about-card{grid-template-columns:1fr}

@@ -761,22 +761,21 @@ export default function LandingClient({
               )}
             </div>
 
-            {/* Badge versi/ukuran tampil sebagai kartu melayang di layar
-                lebar, tetapi di layar kecil kartu itu disembunyikan. Baris
-                statis ini memastikan informasinya tidak hilang. */}
+            {/* Kartu melayang disembunyikan di layar kecil, jadi informasi
+                badge-nya ditampilkan sebagai baris statis agar tidak hilang.
+                Isinya sama dengan kartu melayang, bukan duplikat baris
+                spesifikasi di atasnya. */}
             <div className="hero-badges-static">
               <span>
-                <FontAwesomeIcon icon={faCube} />
-                {appConfig.versionName || 'v1.1.1'}
+                <FontAwesomeIcon icon={faLocationDot} />
+                {appConfig.heroBadge1 || `Lokasi dekat kampus & area strategis ${appConfig.targetCity}`}
               </span>
-              <span>
-                <FontAwesomeIcon icon={faAndroid} />
-                {appConfig.minAndroid || 'Android 8.0+'}
-              </span>
-              <span>
-                <FontAwesomeIcon icon={faBolt} />
-                {appConfig.apkSize || '3.3 MB'}
-              </span>
+              {appConfig.heroBadge2 && (
+                <span>
+                  <FontAwesomeIcon icon={faBuilding} />
+                  {appConfig.heroBadge2}
+                </span>
+              )}
             </div>
 
             <div className="trust-row">
