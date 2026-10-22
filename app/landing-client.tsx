@@ -15,7 +15,7 @@ import {
   faArrowsRotate,
   faFileLines,
   faSliders,
-  faBoxArchive,
+  faCube,
   faCheck,
   faBars,
   faXmark,
@@ -134,7 +134,7 @@ function dismissPopupSignature(cfg: {
 
 const Button = ({ apk, light = false, label = 'Download APK' }: { apk: string; light?: boolean; label?: string }) => (
   <a className={`download ${light ? 'download--light' : ''}`} href={apk} download>
-    <FontAwesomeIcon icon={faDownload} style={{ marginRight: 6 }} />
+    <FontAwesomeIcon icon={faDownload} />
     <span>{label}</span>
   </a>
 );
@@ -375,7 +375,7 @@ export default function LandingClient({
   // new navigations/tabs; browsers aggressively cache favicons per origin and
   // may keep showing the old icon until the user hard-refreshes or clears
   // site data. The revision query string below is the strongest signal a web
-  // page can send â€” it cannot force-invalidate the browser's favicon cache.
+  // page can send "” it cannot force-invalidate the browser's favicon cache.
   useEffect(() => {
     if (appConfig.siteTitle) {
       document.title = appConfig.siteTitle;
@@ -448,6 +448,8 @@ export default function LandingClient({
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   const [footerLogoFailed, setFooterLogoFailed] = useState(false);
+  const [heroMockupFailed, setHeroMockupFailed] = useState(false);
+  const [installMockupFailed, setInstallMockupFailed] = useState(false);
   const [activeInstallStep, setActiveInstallStep] = useState(0);
   const [completedInstallSteps, setCompletedInstallSteps] = useState<number[]>([]);
   const [legalModal, setLegalModal] = useState<{ open: boolean; title: string; content: string }>({
@@ -457,12 +459,8 @@ export default function LandingClient({
   });
 
   const handleInstallStepClick = (stepIndex: number) => {
-    if (stepIndex === 3) {
-      setActiveInstallStep(0);
-      setCompletedInstallSteps([]);
-      return;
-    }
-
+    // Langkah terakhir hanya menampilkan模拟 selesai; ia tidak boleh
+    // me-reset progres karena mockup-nya benar-benar ada.
     setActiveInstallStep(stepIndex);
     setCompletedInstallSteps((completedSteps) =>
       completedSteps.includes(stepIndex)
@@ -470,6 +468,25 @@ export default function LandingClient({
         : [...completedSteps, stepIndex]
     );
   };
+
+  // Escape menutup modal yang sedang terbuka.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (legalModal.open) {
+        setLegalModal({ open: false, title: '', content: '' });
+      } else if (showModal) {
+        setShowModal(false);
+      } else if (showPopupModal) {
+        setShowPopupModal(false);
+        dismissPopupSignature(appConfig);
+      } else if (menu) {
+        setMenu(false);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [legalModal.open, showModal, showPopupModal, menu, appConfig]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -492,12 +509,22 @@ export default function LandingClient({
       { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
     );
 
-    const revealElements = document.querySelectorAll('.reveal-on-scroll');
-    revealElements.forEach((el) => observer.observe(el));
+    const observeAll = () => {
+      document
+        .querySelectorAll('.reveal-on-scroll:not(.is-visible)')
+        .forEach((el) => observer.observe(el));
+    };
+    observeAll();
+
+    // Konten CMS dimuat setelah halaman ter-render (mis. banner promo),
+    // jadi elemen baru harus ikut diobservasi.
+    const mutations = new MutationObserver(observeAll);
+    mutations.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       window.removeEventListener('scroll', onScroll);
       observer.disconnect();
+      mutations.disconnect();
     };
   }, []);
 
@@ -553,49 +580,8 @@ export default function LandingClient({
     .map((item) => [item.question || item.q || '', item.answer || item.a || ''] as [string, string]);
 
   return (
-    <main style={{ '--burgundy': appConfig.brandColor || '#6D0808' } as React.CSSProperties}>
-      {/* Scroll Progress Bar */}
-      <div
-        className="scroll-progress"
-        style={{ width: `${scrollProgress}%` }}
-        aria-hidden="true"
-      />
-
-      {/* Announcement Banner (Managed from Admin Dashboard) */}
-      {appConfig.bannerActive && !bannerDismissed && appConfig.bannerText && (
-        <div className={`announcement-banner announcement-banner--${appConfig.bannerType || 'promo'}`}>
-          <div className="shell announcement-inner" style={{ position: 'relative' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <FontAwesomeIcon icon={faBullhorn} />
-              {appConfig.bannerText}
-            </span>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-              {appConfig.bannerLink && (
-                <a href={appConfig.bannerLink} className="announcement-link">
-                  Lihat Detail <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
-                </a>
-              )}
-              <button
-                type="button"
-                onClick={() => setBannerDismissed(true)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  padding: '2px 6px',
-                  opacity: 0.8,
-                  fontSize: 14,
-                }}
-                aria-label="Tutup Pengumuman"
-              >
-                âœ•
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+    <>
+      <a className="skip-link" href="#konten-utama">Lewati ke konten utama</a>
       {/* Header */}
       <header className="site-header">
         <div className="shell nav-wrap">
@@ -603,7 +589,7 @@ export default function LandingClient({
             {appConfig.logoUrl && !logoFailed ? (
               <img
                 src={withRevision(appConfig.logoUrl, settingsRevision)}
-                alt={appConfig.appName}
+                alt=""
                 onError={() => setLogoFailed(true)}
                 style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
               />
@@ -615,7 +601,7 @@ export default function LandingClient({
             {appConfig.appName}
           </a>
 
-          <nav className="nav-links">
+          <nav className="nav-links" aria-label="Navigasi utama">
             {activeNavLinks.map((item, i) => (
               <a className={i === 0 ? 'active' : ''} href={item.href} key={item.href + i}>
                 {item.label}
@@ -629,15 +615,18 @@ export default function LandingClient({
 
           <button
             className="menu-toggle"
+            type="button"
             onClick={() => setMenu(!menu)}
-            aria-label="Toggle navigation menu"
+            aria-label={menu ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-expanded={menu}
+            aria-controls="menu-seluler"
           >
             <FontAwesomeIcon icon={menu ? faXmark : faBars} />
           </button>
         </div>
 
         {menu && (
-          <nav className="mobile-menu">
+          <nav className="mobile-menu" id="menu-seluler" aria-label="Navigasi seluler">
             {activeNavLinks.map((item, i) => (
               <a href={item.href} key={item.href + i} onClick={() => setMenu(false)}>
                 {item.label}
@@ -647,6 +636,61 @@ export default function LandingClient({
           </nav>
         )}
       </header>
+      <main id="konten-utama" style={{ '--burgundy': appConfig.brandColor || '#6D0808' } as React.CSSProperties}>
+      {/* Scroll Progress Bar */}
+      <div
+        className="scroll-progress"
+        style={{ width: `${scrollProgress}%` }}
+        aria-hidden="true"
+      />
+
+      {/* Status sinkronisasi konten (dibaca pembaca layar) */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {realtimeStatus === 'SUBSCRIBED'
+          ? 'Pembaruan Landing Page otomatis aktif.'
+          : 'Pembaruan Landing Page otomatis tidak aktif; halaman diperbarui berkala.'}
+      </p>
+
+      {/* Announcement Banner (Managed from Admin Dashboard) */}
+      {appConfig.bannerActive && !bannerDismissed && appConfig.bannerText && (
+        <div className={`announcement-banner announcement-banner--${appConfig.bannerType || 'promo'}`}>
+          <div className="shell announcement-inner" style={{ position: 'relative' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+              <FontAwesomeIcon icon={faBullhorn} />
+              {appConfig.bannerText}
+            </span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+              {appConfig.bannerLink && (
+                <a href={appConfig.bannerLink} className="announcement-link">
+                  Lihat Detail <FontAwesomeIcon icon={faArrowRight} />
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setBannerDismissed(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  minWidth: 32,
+                  minHeight: 32,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 6,
+                  opacity: 0.85,
+                  fontSize: 15,
+                }}
+                aria-label="Tutup Pengumuman"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Hero Section */}
       <section id="beranda" className="hero">
@@ -654,7 +698,7 @@ export default function LandingClient({
         <div className="hero__overlay" />
         <div className="shell hero__content">
           <div className="hero__copy">
-            <p className="eyebrow eyebrow--light">{appConfig.appName.toUpperCase()} â€¢ {appConfig.targetCity.toUpperCase()}</p>
+            <p className="eyebrow eyebrow--light">{appConfig.appName.toUpperCase()} • {appConfig.targetCity.toUpperCase()}</p>
             <h1>
               {appConfig.heroHeadline || appConfig.tagline || `Temukan Kost Impianmu di ${appConfig.targetCity}`}
             </h1>
@@ -665,55 +709,74 @@ export default function LandingClient({
             <div className="hero__actions">
               <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
               <a className="outline-button" href={appConfig.heroCtaSecondaryLink || '#fitur'}>
-                {appConfig.heroCtaSecondaryLabel || 'Lihat Fitur'} <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 6 }} />
+                {appConfig.heroCtaSecondaryLabel || 'Lihat Fitur'} <FontAwesomeIcon icon={faArrowRight} />
               </a>
             </div>
 
             {/* Spec Capsule Under CTA */}
             <div style={{ marginTop: 14, fontSize: 11, color: '#f7d9c9', display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
               <span>
-                <FontAwesomeIcon icon={faBoxArchive} style={{ marginRight: 5 }} />
+                <FontAwesomeIcon icon={faCube} />
                 {appConfig.versionName || 'v1.0.1'}
               </span>
-              <span>â€¢</span>
+              <span>•</span>
               <span>
-                <FontAwesomeIcon icon={faAndroid} style={{ marginRight: 5 }} />
+                <FontAwesomeIcon icon={faAndroid} />
                 {appConfig.minAndroid || 'Android 8.0+'}
               </span>
-              <span>â€¢</span>
+              <span>•</span>
               <span>
-                <FontAwesomeIcon icon={faBolt} style={{ marginRight: 5 }} />
+                <FontAwesomeIcon icon={faBolt} />
                 {appConfig.apkSize || '6.9 MB'}
               </span>
-              <span>â€¢</span>
+              <span>•</span>
               <span>
-                <FontAwesomeIcon icon={faCheck} style={{ marginRight: 5 }} />
+                <FontAwesomeIcon icon={faCheck} />
                 {appConfig.heroAdFreeText || 'Bebas Iklan'}
               </span>
               {appConfig.securityModalActive && (
                 <>
-                  <span>â€¢</span>
-                  <span
+                  <span>•</span>
+                  <button
+                    type="button"
                     onClick={() => setShowModal(true)}
-                    style={{ textDecoration: 'underline', cursor: 'pointer', color: '#fff' }}
+                    style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', textDecoration: 'underline', cursor: 'pointer', color: '#fff' }}
                   >
                     Panduan Pasang APK
-                  </span>
+                  </button>
                 </>
               )}
             </div>
 
+            {/* Badge versi/ukuran tampil sebagai kartu melayang di layar
+                lebar, tetapi di layar kecil kartu itu disembunyikan. Baris
+                statis ini memastikan informasinya tidak hilang. */}
+            <div className="hero-badges-static">
+              <span>
+                <FontAwesomeIcon icon={faCube} />
+                {appConfig.versionName || 'v1.1.1'}
+              </span>
+              <span>
+                <FontAwesomeIcon icon={faAndroid} />
+                {appConfig.minAndroid || 'Android 8.0+'}
+              </span>
+              <span>
+                <FontAwesomeIcon icon={faBolt} />
+                {appConfig.apkSize || '3.3 MB'}
+              </span>
+            </div>
+
             <div className="trust-row">
               <span>
-                <FontAwesomeIcon icon={faShieldHalved} style={{ marginRight: 4 }} />
+                <FontAwesomeIcon icon={faShieldHalved} />
                 {appConfig.heroTrustBadge1 || 'Mudah Digunakan'}
               </span>
               <span>
-                <FontAwesomeIcon icon={faCompass} style={{ marginRight: 4 }} />
+                <FontAwesomeIcon icon={faCompass} />
                 {appConfig.heroTrustBadge2 || 'Data Terpercaya'}
               </span>
               <span>
-                <FontAwesomeIcon icon={faArrowsRotate} style={{ marginRight: 4 }} />
+                <FontAwesomeIcon icon={faArrowsRotate} />
                 {appConfig.heroTrustBadge3 || 'Update Rutin'}
               </span>
             </div>
@@ -729,7 +792,7 @@ export default function LandingClient({
             <div className="hero-3d-phone">
               <img
                 src={
-                  appConfig.heroImageUrl
+                  appConfig.heroImageUrl && !heroMockupFailed
                     ? withRevision(appConfig.heroImageUrl, settingsRevision)
                     : phoneFilter === 'Putri'
                     ? '/mockup-hero-putri.png'
@@ -739,21 +802,23 @@ export default function LandingClient({
                     ? '/mockup-hero-campur.png'
                     : '/mockup-hero-semua.png'
                 }
-                alt={`Tampilan Aplikasi ${appConfig.appName} di Layar Smartphone 3D`}
+                alt={`Tampilan aplikasi ${appConfig.appName} di layar smartphone`}
                 className="hero-3d-img"
+                onError={() => setHeroMockupFailed(true)}
               />
             </div>
 
             {/* Interactive Filter Pills Floating in Hero (Active when using default mockup) */}
-            {!appConfig.heroImageUrl && (
-              <div className="hero-filter-selector">
-                <span className="hero-filter-label">Kategori:</span>
+            {(!appConfig.heroImageUrl || heroMockupFailed) && (
+              <div className="hero-filter-selector" role="group" aria-labelledby="hero-filter-label">
+                <span className="hero-filter-label" id="hero-filter-label">Kategori:</span>
                 {(['Semua', 'Putri', 'Putra', 'Campur'] as const).map((key) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => setPhoneFilter(key)}
                     className={`hero-filter-chip ${phoneFilter === key ? 'active' : ''}`}
+                    aria-pressed={phoneFilter === key}
                   >
                     {key}
                   </button>
@@ -787,9 +852,9 @@ export default function LandingClient({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="download"
-                          style={{ minHeight: 38, padding: '0 18px', fontSize: 12 }}
+                          style={{ minHeight: 44, padding: '0 18px', fontSize: 13 }}
                         >
-                          Kunjungi Penawaran <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 6 }} />
+                          Kunjungi Penawaran <FontAwesomeIcon icon={faArrowRight} />
                         </a>
                       </div>
                     )}
@@ -797,7 +862,7 @@ export default function LandingClient({
                   {(ad.image_url || ad.image) && (
                     <img
                       src={withRevision((ad.image_url || ad.image) as string, settingsRevision)}
-                      alt={ad.title}
+                      alt=""
                       className="promo-banner-img"
                     />
                   )}
@@ -816,6 +881,9 @@ export default function LandingClient({
           <p className="intro">Kenali manfaat dan informasi penting sebelum mencoba aplikasi kami.</p>
 
           <div className="trust-grid">
+            {activeTrust.length === 0 && (
+              <p className="empty-state">Belum ada poin kepercayaan yang ditampilkan.</p>
+            )}
             {activeTrust.map((item) => (
               <article className="trust-card reveal-on-scroll" key={item.title}>
                 <span className="icon-badge">
@@ -839,6 +907,9 @@ export default function LandingClient({
           <p className="intro">Pengalaman mencari kost di {appConfig.targetCity} yang sederhana, lengkap, dan mudah diandalkan.</p>
 
           <div className="feature-grid">
+            {activeFeatures.length === 0 && (
+              <p className="empty-state">Belum ada fitur yang ditampilkan.</p>
+            )}
             {activeFeatures.map((item) => (
               <article className="feature-card reveal-on-scroll" key={item.title}>
                 <span className="icon-badge">
@@ -859,11 +930,16 @@ export default function LandingClient({
           <div className="install-mockup-wrap">
             <div className="install-3d-phone">
               <img
-                src={`/mockup-install-${activeInstallStep + 1}.png`}
-                alt={`Simulasi Instalasi Langkah ${activeInstallStep + 1}: ${
-                  ['Download Berkas APK', 'Konfirmasi Dialog Keamanan', 'Izin Sumber Tidak Dikenal', 'Instalasi Selesai'][activeInstallStep] || 'Langkah Instalasi'
+                src={
+                  installMockupFailed
+                    ? '/mockup-install-1.png'
+                    : `/mockup-install-${activeInstallStep + 1}.png`
+                }
+                alt={`Simulasi langkah ${activeInstallStep + 1}: ${
+                  (activeInstallSteps[activeInstallStep]?.t) || 'Langkah Instalasi'
                 }`}
                 className="install-3d-img"
+                onError={() => setInstallMockupFailed(true)}
               />
             </div>
           </div>
@@ -883,6 +959,7 @@ export default function LandingClient({
                   key={stepItem.n + idx}
                   onClick={() => handleInstallStepClick(idx)}
                   disabled={completedInstallSteps.includes(idx)}
+                  aria-pressed={activeInstallStep === idx}
                   aria-label={`${stepItem.t}${completedInstallSteps.includes(idx) ? ' (sudah dipilih)' : ''}`}
                 >
                   <span>{stepItem.n}</span>
@@ -890,7 +967,7 @@ export default function LandingClient({
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
                       <h3>{stepItem.t}</h3>
                       {activeInstallStep === idx && (
-                        <small style={{ fontSize: 8, color: 'var(--burgundy, #6D0808)', fontWeight: 700, background: '#f5e8e8', padding: '1px 5px', borderRadius: 4 }}>
+                        <small style={{ fontSize: 11, lineHeight: 1.4, color: 'var(--burgundy, #6D0808)', fontWeight: 700, background: '#f5e8e8', padding: '2px 6px', borderRadius: 6 }}>
                           Aktif
                         </small>
                       )}
@@ -901,6 +978,12 @@ export default function LandingClient({
               ))}
             </div>
 
+            {appConfig.releaseNotes && (
+              <p style={{ margin: '14px 0 0', color: 'var(--muted, #655955)', fontSize: 13, lineHeight: 1.6 }}>
+                {appConfig.releaseNotes}
+              </p>
+            )}
+
             <div className="install-actions">
               <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
               {appConfig.securityModalActive && (
@@ -909,7 +992,7 @@ export default function LandingClient({
                   onClick={() => setShowModal(true)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
                 >
-                  Lihat Panduan Dialog Keamanan Android <FontAwesomeIcon icon={faArrowRight} style={{ marginLeft: 4 }} />
+                  Lihat Panduan Dialog Keamanan Android <FontAwesomeIcon icon={faArrowRight} />
                 </button>
               )}
             </div>
@@ -934,7 +1017,7 @@ export default function LandingClient({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: 6 }} />
+                <FontAwesomeIcon icon={faWhatsapp} />
                 <span>{appConfig.ownerWaLabel || 'Daftar via WhatsApp'}</span>
               </a>
               <Button apk={apk} light label={appConfig.ownerSecondaryLabel || 'Download Aplikasi'} />
@@ -942,6 +1025,11 @@ export default function LandingClient({
           </div>
 
           <ol>
+            {activeOwnerSteps.length === 0 && (
+              <li className="empty-state" style={{ display: 'block' }}>
+                Belum ada langkah pendaftaran yang ditampilkan.
+              </li>
+            )}
             {activeOwnerSteps.map((x, i) => (
               <li key={i}>
                 <span>{i + 1}</span>
@@ -967,32 +1055,32 @@ export default function LandingClient({
               </p>
 
               {/* Dynamic Company/Contact Info */}
-              <div style={{ marginTop: 14, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 6, color: '#52433e' }}>
+              <div style={{ marginTop: 14, fontSize: 13, display: 'flex', flexDirection: 'column', gap: 8, color: '#52433e' }}>
                 {appConfig.address && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faMapPin} style={{ color: 'var(--burgundy, #6D0808)', width: 14 }} />
+                    <FontAwesomeIcon icon={faMapPin} style={{ color: 'var(--burgundy, #6D0808)', fontSize: 14 }} />
                     <span>{appConfig.address}</span>
                   </div>
                 )}
                 {appConfig.contactPhone && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faPhone} style={{ color: 'var(--burgundy, #6D0808)', width: 14 }} />
+                    <FontAwesomeIcon icon={faPhone} style={{ color: 'var(--burgundy, #6D0808)', fontSize: 14 }} />
                     <span>{appConfig.contactPhone}</span>
                   </div>
                 )}
                 {appConfig.supportEmail && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faEnvelope} style={{ color: 'var(--burgundy, #6D0808)', width: 14 }} />
+                    <FontAwesomeIcon icon={faEnvelope} style={{ color: 'var(--burgundy, #6D0808)', fontSize: 14 }} />
                     <span>{appConfig.supportEmail}</span>
                   </div>
                 )}
               </div>
 
               <div className="social-links" style={{ marginTop: 16, flexWrap: 'wrap', gap: 14 }}>
-                <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" aria-label="GitHub" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <FontAwesomeIcon icon={faGithub} /> GitHub
                 </a>
-                <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1ebe5d' }}>
+                <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1ebe5d' }}>
                   <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
                 </a>
                 {appConfig.instagram && (
@@ -1027,6 +1115,9 @@ export default function LandingClient({
           <div id="faq" className="faq">
             <p className="eyebrow">FAQ</p>
             <h2>Pertanyaan yang Sering Diajukan</h2>
+            {activeFaqs.length === 0 && (
+              <p className="empty-state">Belum ada pertanyaan yang ditampilkan.</p>
+            )}
             {activeFaqs.map(([q, a], i) => (
               <div className="faq-item" key={q + i}>
                 <button
@@ -1063,7 +1154,7 @@ export default function LandingClient({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <FontAwesomeIcon icon={faWhatsapp} style={{ marginRight: 6 }} />
+                <FontAwesomeIcon icon={faWhatsapp} />
                 <span>{appConfig.feedbackButtonLabel || 'Kirim Masukan via WhatsApp'}</span>
               </a>
             </div>
@@ -1083,91 +1174,6 @@ export default function LandingClient({
         </div>
       </section>
 
-      {/* Footer */}
-      <footer>
-        <div className="shell footer-grid">
-          <div>
-            <a href="#beranda" className="brand">
-              {(appConfig.footerLogoUrl || appConfig.logoUrl) && !footerLogoFailed ? (
-                <img
-                  src={withRevision(appConfig.footerLogoUrl || appConfig.logoUrl, settingsRevision)}
-                  alt={appConfig.appName}
-                  onError={() => setFooterLogoFailed(true)}
-                  style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
-                />
-              ) : (
-                <span className="brand__mark">
-                  <FontAwesomeIcon icon={faBuilding} />
-                </span>
-              )}
-              {appConfig.appName}
-            </a>
-            <p>{appConfig.footerTagline || appConfig.tagline || `Kost terbaik, untuk masa depanmu di ${appConfig.targetCity}.`}</p>
-            {appConfig.address && <p style={{ fontSize: 11, marginTop: 4, opacity: 0.8 }}>{appConfig.address}</p>}
-
-            <div style={{ display: 'flex', gap: 14, fontSize: 11, marginTop: 12, opacity: 0.85 }}>
-              <button
-                type="button"
-                onClick={() => setLegalModal({ open: true, title: 'Kebijakan Privasi', content: appConfig.legalPrivacy })}
-                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Kebijakan Privasi
-              </button>
-              <span>â€¢</span>
-              <button
-                type="button"
-                onClick={() => setLegalModal({ open: true, title: 'Syarat & Ketentuan', content: appConfig.legalTerms })}
-                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Syarat & Ketentuan
-              </button>
-            </div>
-          </div>
-
-          <nav>
-            {activeNavLinks.map((item, i) => (
-              <a href={item.href} key={item.href + i}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="footer-social">
-            <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" title="GitHub">
-              <FontAwesomeIcon icon={faGithub} size="lg" />
-            </a>
-            <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" title="WhatsApp" style={{ color: '#25D366' }}>
-              <FontAwesomeIcon icon={faWhatsapp} size="lg" />
-            </a>
-            {appConfig.instagram && (
-              <a href={appConfig.instagram} target="_blank" rel="noopener noreferrer" title="Instagram" style={{ color: '#E1306C' }}>
-                <FontAwesomeIcon icon={faInstagram} size="lg" />
-              </a>
-            )}
-            {appConfig.facebook && (
-              <a href={appConfig.facebook} target="_blank" rel="noopener noreferrer" title="Facebook" style={{ color: '#1877F2' }}>
-                <FontAwesomeIcon icon={faFacebook} size="lg" />
-              </a>
-            )}
-            {appConfig.tiktok && (
-              <a href={appConfig.tiktok} target="_blank" rel="noopener noreferrer" title="TikTok">
-                <FontAwesomeIcon icon={faTiktok} size="lg" />
-              </a>
-            )}
-            {appConfig.youtube && (
-              <a href={appConfig.youtube} target="_blank" rel="noopener noreferrer" title="YouTube" style={{ color: '#FF0000' }}>
-                <FontAwesomeIcon icon={faYoutube} size="lg" />
-              </a>
-            )}
-            {appConfig.linkedin && (
-              <a href={appConfig.linkedin} target="_blank" rel="noopener noreferrer" title="LinkedIn" style={{ color: '#0A66C2' }}>
-                <FontAwesomeIcon icon={faLinkedin} size="lg" />
-              </a>
-            )}
-          </div>
-        </div>
-        <div className="shell copyright">{appConfig.footerCopyright || `Â© 2026 ${appConfig.appName}. All rights reserved.`}</div>
-      </footer>
 
       {/* Floating WhatsApp Quick Action */}
       <a
@@ -1192,10 +1198,14 @@ export default function LandingClient({
         >
           <div
             className="modal-box"
+            role="dialog"
+            aria-modal="true"
+            aria-label={appConfig.popupTitle || 'Promo aplikasi'}
             style={{ maxWidth: 480, textAlign: 'center', padding: '24px 20px' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
               className="modal-close"
               onClick={() => {
                 setShowPopupModal(false);
@@ -1209,7 +1219,7 @@ export default function LandingClient({
               <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', maxHeight: 220 }}>
                 <img
                   src={withRevision(appConfig.popupImageUrl, settingsRevision)}
-                  alt={appConfig.popupTitle || 'Pop-up'}
+                  alt={appConfig.popupTitle || ""}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
@@ -1257,8 +1267,8 @@ export default function LandingClient({
       {/* Android Play Protect Modal */}
       {appConfig.securityModalActive && showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowModal(false)} aria-label="Tutup">
+          <div className="modal-box" role="dialog" aria-modal="true" aria-label={appConfig.securityModalTitle || 'Panduan Dialog Download Android'} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" onClick={() => setShowModal(false)} aria-label="Tutup dialog panduan">
               <FontAwesomeIcon icon={faXmark} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 16 }}>
@@ -1279,7 +1289,7 @@ export default function LandingClient({
               <br />
               4. Klik <b>&quot;Instal&quot;</b> dan aplikasi siap digunakan!
             </div>
-            <p style={{ fontSize: 11, color: '#8A7F79', marginTop: 10 }}>
+            <p style={{ fontSize: 12, color: '#6B605A', marginTop: 10 }}>
               {appConfig.securityModalNote || `Berkas APK ${appConfig.appName} (${appConfig.versionName}) 100% aman dan diverifikasi langsung dari repositori resmi proyek.`}
             </p>
             <div style={{ marginTop: 18, textAlign: 'right' }}>
@@ -1294,8 +1304,8 @@ export default function LandingClient({
       {/* Legal Information Modal (Privacy Policy & Terms of Service) */}
       {legalModal.open && (
         <div className="modal-overlay" onClick={() => setLegalModal({ open: false, title: '', content: '' })}>
-          <div className="modal-box" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setLegalModal({ open: false, title: '', content: '' })} aria-label="Tutup">
+          <div className="modal-box" role="dialog" aria-modal="true" aria-label={legalModal.title || 'Informasi legal'} style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close" onClick={() => setLegalModal({ open: false, title: '', content: '' })} aria-label="Tutup dialog informasi">
               <FontAwesomeIcon icon={faXmark} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--burgundy, #6D0808)', fontWeight: 700, fontSize: 16 }}>
@@ -1318,6 +1328,92 @@ export default function LandingClient({
           </div>
         </div>
       )}
-    </main>
+      </main>
+      {/* Footer */}
+      <footer>
+        <div className="shell footer-grid">
+          <div>
+            <a href="#beranda" className="brand">
+              {(appConfig.footerLogoUrl || appConfig.logoUrl) && !footerLogoFailed ? (
+                <img
+                  src={withRevision(appConfig.footerLogoUrl || appConfig.logoUrl, settingsRevision)}
+                  alt=""
+                  onError={() => setFooterLogoFailed(true)}
+                  style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
+                />
+              ) : (
+                <span className="brand__mark">
+                  <FontAwesomeIcon icon={faBuilding} />
+                </span>
+              )}
+              {appConfig.appName}
+            </a>
+            <p>{appConfig.footerTagline || appConfig.tagline || `Kost terbaik, untuk masa depanmu di ${appConfig.targetCity}.`}</p>
+            {appConfig.address && <p style={{ fontSize: 12, marginTop: 4, opacity: 0.85 }}>{appConfig.address}</p>}
+
+            <div style={{ display: 'flex', gap: 14, fontSize: 12, marginTop: 12, opacity: 0.85 }}>
+              <button
+                type="button"
+                onClick={() => setLegalModal({ open: true, title: 'Kebijakan Privasi', content: appConfig.legalPrivacy })}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Kebijakan Privasi
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => setLegalModal({ open: true, title: 'Syarat & Ketentuan', content: appConfig.legalTerms })}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Syarat & Ketentuan
+              </button>
+            </div>
+          </div>
+
+          <nav aria-label="Navigasi footer">
+            {activeNavLinks.map((item, i) => (
+              <a href={item.href} key={item.href + i}>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="footer-social">
+            <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub">
+              <FontAwesomeIcon icon={faGithub} size="lg" />
+            </a>
+            <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="WhatsApp" style={{ color: '#25D366' }}>
+              <FontAwesomeIcon icon={faWhatsapp} size="lg" />
+            </a>
+            {appConfig.instagram && (
+              <a href={appConfig.instagram} target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram" style={{ color: '#E1306C' }}>
+                <FontAwesomeIcon icon={faInstagram} size="lg" />
+              </a>
+            )}
+            {appConfig.facebook && (
+              <a href={appConfig.facebook} target="_blank" rel="noopener noreferrer" title="Facebook" aria-label="Facebook" style={{ color: '#1877F2' }}>
+                <FontAwesomeIcon icon={faFacebook} size="lg" />
+              </a>
+            )}
+            {appConfig.tiktok && (
+              <a href={appConfig.tiktok} target="_blank" rel="noopener noreferrer" title="TikTok" aria-label="TikTok">
+                <FontAwesomeIcon icon={faTiktok} size="lg" />
+              </a>
+            )}
+            {appConfig.youtube && (
+              <a href={appConfig.youtube} target="_blank" rel="noopener noreferrer" title="YouTube" aria-label="YouTube" style={{ color: '#FF0000' }}>
+                <FontAwesomeIcon icon={faYoutube} size="lg" />
+              </a>
+            )}
+            {appConfig.linkedin && (
+              <a href={appConfig.linkedin} target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn" style={{ color: '#0A66C2' }}>
+                <FontAwesomeIcon icon={faLinkedin} size="lg" />
+              </a>
+            )}
+          </div>
+        </div>
+        <div className="shell copyright">{appConfig.footerCopyright || `© 2026 ${appConfig.appName}. All rights reserved.`}</div>
+      </footer>
+    </>
   );
 }
