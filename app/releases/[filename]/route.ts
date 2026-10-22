@@ -20,9 +20,6 @@ export async function GET(
     const candidatePaths = [
       path.join(cwd, "public/releases", safeFilename),
       path.join(cwd, "public/releases/CariKostKita-v1.1.1-release.apk"),
-      path.join(cwd, "public/releases/CariKostKita-v1.1.0-release.apk"),
-      path.join(cwd, "public/releases/CariKostKita-v1.1.0.apk"),
-      path.join(cwd, "public/releases/CariKostKita-v1.0.1.apk"),
       path.join(cwd, "public/releases/CariKostKita.apk"),
       path.join(cwd, "public/releases/app-release.apk"),
       path.resolve(cwd, "../Admin-Gue/public/releases", safeFilename),
