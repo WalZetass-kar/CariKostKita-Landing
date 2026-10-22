@@ -159,7 +159,7 @@ export const defaultConfig: AppConfigState = {
   minAndroid: 'Android 8.0+',
   heroBadge1: 'Lokasi dekat kampus & area strategis',
   heroBadge2: 'Detail kost & foto kamar lengkap',
-  apk: 'https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.1.0/CariKostKita-v1.1.0-release.apk',
+  apk: 'https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.1.1/CariKostKita-v1.1.1-release.apk',
   waNumber: '6281270008899',
   bannerActive: false,
   bannerText: '',
