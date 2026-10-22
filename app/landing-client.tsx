@@ -886,12 +886,12 @@ export default function LandingClient({
         </section>
       )}
 
-      {/* Prerelease Section with Scroll Animation */}
+      {/* Trust Section with Scroll Animation */}
       <section className="section prerelease reveal-on-scroll">
         <div className="shell">
-          <p className="eyebrow">VERSI PRA-RILIS</p>
-          <h2>Mengapa mengunduh versi pra-rilis {appConfig.appName}?</h2>
-          <p className="intro">Kenali manfaat dan informasi penting sebelum mencoba aplikasi kami.</p>
+          <p className="eyebrow">UNDUH RESMI</p>
+          <h2>Mengapa mengunduh {appConfig.appName} langsung dari sini?</h2>
+          <p className="intro">Kenali manfaat dan jaminan keamanan sebelum memasang aplikasi di ponselmu.</p>
 
           <div className="trust-grid">
             {activeTrust.length === 0 && (
