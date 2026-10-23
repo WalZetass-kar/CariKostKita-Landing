@@ -16,15 +16,24 @@ export async function GET(
     const { filename } = await context.params;
     const safeFilename = path.basename(filename);
 
+    // Hanya layani nama berkas yang diminta, tanpa alias. Dulu route ini
+    // jatuh ke `CariKostKita.apk` / `app-release.apk` ketika berkas yang
+    // diminta tidak ada, sehingga unduhan bernama versi baru bisa berisi
+    // biner versi lama. Lebih baik redirect ke rilis resmi daripada
+    // menyajikan biner yang salah nama.
+    const isPlainApk =
+      safeFilename === filename && safeFilename.toLowerCase().endsWith(".apk");
+    if (!isPlainApk) {
+      return NextResponse.json(
+        { error: "Berkas tidak ditemukan." },
+        { status: 404 }
+      );
+    }
+
     const cwd = process.cwd();
     const candidatePaths = [
       path.join(cwd, "public/releases", safeFilename),
-      path.join(cwd, "public/releases/CariKostKita-v1.1.2-release.apk"),
-      path.join(cwd, "public/releases/CariKostKita.apk"),
-      path.join(cwd, "public/releases/app-release.apk"),
       path.resolve(cwd, "../Admin-Gue/public/releases", safeFilename),
-      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita-v1.1.2-release.apk"),
-      path.resolve(cwd, "../Admin-Gue/public/releases/CariKostKita.apk"),
     ];
 
     for (const filePath of candidatePaths) {
@@ -32,21 +41,22 @@ export async function GET(
         const stats = fs.statSync(filePath);
         if (stats.isFile() && stats.size > 0) {
           const fileBuffer = fs.readFileSync(filePath);
-          const downloadName = safeFilename.endsWith(".apk") ? safeFilename : "CariKostKita-v1.1.2-release.apk";
           return new NextResponse(fileBuffer, {
             status: 200,
             headers: {
               "Content-Type": APK_MIME,
-              "Content-Disposition": `attachment; filename="${downloadName}"`,
+              "Content-Disposition": `attachment; filename="${safeFilename}"`,
               "Content-Length": String(stats.size),
-              "Cache-Control": "public, max-age=31536000, immutable",
+              // Nama berkas sudah memuat versi, tetapi cache dibuat pendek
+              // agar kesalahan rilis tidak pernah tersimpan lama di edge.
+              "Cache-Control": "public, max-age=3600, must-revalidate",
             },
           });
         }
       }
     }
 
-    // Jika file fisik tidak tersedia di serverless container, redirect ke rilis resmi GitHub
+    // Tidak ada berkas dengan nama itu: arahkan ke rilis resmi.
     return NextResponse.redirect(GITHUB_FALLBACK, 307);
   } catch (error) {
     console.error("APK download route error:", error);
