@@ -734,7 +734,7 @@ export default function LandingClient({
             <div className="hero-spec">
               <span>
                 <FontAwesomeIcon icon={faCube} />
-                {appConfig.versionName || 'v1.1.1'}
+                {appConfig.versionName || 'v1.1.3'}
               </span>
               <i className="dot" aria-hidden="true" />
               <span>
