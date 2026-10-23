@@ -202,7 +202,7 @@ export async function GET() {
       { id: 'ostep-5', title: 'Setelah disetujui, listing kost Anda langsung tayang dan dashboard pemilik dapat digunakan.', order: 5, is_active: true },
     ],
     faqItems: [
-      { id: 'faq-1', question: 'Mengapa aplikasi belum ada di Google Play Store?', answer: 'Aplikasi sedang dalam tahap pra-rilis publik. Berkas APK dibagikan langsung agar para pencari kost bisa langsung menikmati kemudahan mencari kost sebelum tersedia di Play Store.', order: 1, is_active: true },
+      { id: 'faq-1', question: 'Mengapa aplikasi belum ada di Google Play Store?', answer: 'Aplikasi dirilis resmi lewat GitHub, sehingga kamu bisa mengunduh berkas APK langsung dan terverifikasi tanpa menunggu proses peninjauan Play Store.', order: 1, is_active: true },
       { id: 'faq-2', question: 'Apakah aman menginstal file APK ini?', answer: 'Sangat aman. Berkas APK dikompilasi langsung dari repositori resmi proyek tanpa injeksi kode pihak ketiga. Android akan menampilkan dialog standar yang aman untuk disetujui.', order: 2, is_active: true },
       { id: 'faq-3', question: 'Versi Android apa yang didukung?', answer: 'Mendukung Android 8.0+ hingga versi Android yang lebih baru dengan ukuran hemat kuota.', order: 3, is_active: true },
       { id: 'faq-4', question: 'Apakah mencari kost dikenakan biaya?', answer: 'Tidak. Layanan pencarian kost 100% gratis untuk para pencari kost tanpa biaya langganan, biaya admin, maupun komisi perantara.', order: 4, is_active: true },
