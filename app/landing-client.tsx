@@ -326,12 +326,14 @@ export default function LandingClient({
     };
   }, [fetchConfig, fetchPromoAds]);
 
-  // FALLBACK only (never the primary path): while Realtime is not
-  // SUBSCRIBED, poll the lightweight version pointer every 10s and only
-  // re-fetch the full document when the revision actually moved. When the
-  // store has no usable revision yet, a full re-fetch runs every 30s so the
-  // page still converges. Always re-validate when the tab becomes visible or
-  // regains focus (covers reconnect/sleep gaps).
+  // Safety net that also runs while Realtime reports SUBSCRIBED. A broadcast
+  // can be missed (tab suspended, channel reconnected, an older Admin tab that
+  // never published), and trusting the status alone left open pages stale.
+  // Poll the lightweight version pointer every 10s while realtime is down, or
+  // every 30s as a slower safety net when it is up. Only re-fetch the full
+  // document when the revision actually moved. When the store has no usable
+  // revision yet, a full re-fetch runs every third tick so the page converges.
+  // Always re-validate when the tab becomes visible or regains focus.
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') fetchConfig('visibility');
@@ -339,34 +341,32 @@ export default function LandingClient({
     const onFocus = () => fetchConfig('focus');
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onFocus);
-    let timer: ReturnType<typeof setInterval> | undefined;
-    if (realtimeStatus !== 'SUBSCRIBED') {
-      let ticks = 0;
-      timer = setInterval(async () => {
-        ticks += 1;
-        try {
-          const res = await fetch(publicApiUrl + '/api/v1/public/settings/version', {
-            cache: 'no-store',
-          });
-          const json = await safeParseResponse(res);
-          const revision = Number(json?.data?.revision ?? 0) || 0;
-          if (revision > 0) {
-            if (revision !== appliedRevisionRef.current) {
-              await fetchConfig('fallback-poll');
-            }
-            return;
+    let ticks = 0;
+    const intervalMs = realtimeStatus === 'SUBSCRIBED' ? 30000 : 10000;
+    const timer = setInterval(async () => {
+      ticks += 1;
+      try {
+        const res = await fetch(publicApiUrl + '/api/v1/public/settings/version', {
+          cache: 'no-store',
+        });
+        const json = await safeParseResponse(res);
+        const revision = Number(json?.data?.revision ?? 0) || 0;
+        if (revision > 0) {
+          if (revision !== appliedRevisionRef.current) {
+            await fetchConfig('fallback-poll');
           }
-        } catch {
-          // A failed version check must never break the page.
+          return;
         }
-        // No usable revision: fall back to a full re-fetch every 30s.
-        if (ticks % 3 === 0) await fetchConfig('fallback-poll');
-      }, 10000);
-    }
+      } catch {
+        // A failed version check must never break the page.
+      }
+      // No usable revision: fall back to a full re-fetch every 30s/90s.
+      if (ticks % 3 === 0) await fetchConfig('fallback-poll');
+    }, intervalMs);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onFocus);
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
     };
   }, [fetchConfig, realtimeStatus]);
 
