@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared landing-page content model.
  *
  * The server component, the client component and `generateMetadata` all map
@@ -146,8 +146,8 @@ export const defaultConfig: AppConfigState = {
   appName: 'CariKostKita',
   tagline: 'Temukan Kost Nyaman & Terpercaya di Pekanbaru',
   heroText: 'CariKostKita hadir untuk memudahkan kamu menemukan kost terbaik di Pekanbaru. Dengan tampilan yang simpel, cepat, dan lengkap, semua kebutuhan kost ada di genggaman.',
-  versionName: 'v1.1.3',
-  releaseNotes: 'Rilis resmi CariKostKita v1.1.3: verifikasi pemilik berbasis properti tanpa KTP dan beranda 10 kost terdekat.',
+  versionName: 'v1.1.4',
+  releaseNotes: 'Rilis resmi CariKostKita v1.1.4: perbaikan ikon aplikasi Android tanpa tepi hitam, ikon adaptif cream + logo mark, dan peningkatan aset ikon.',
   supportEmail: 'support@carikostkita.id',
   contactPhone: '0761-555-0123',
   address: 'Jl. Soekarno Hatta No. 1, Pekanbaru, Riau',
@@ -159,7 +159,7 @@ export const defaultConfig: AppConfigState = {
   minAndroid: 'Android 8.0+',
   heroBadge1: 'Lokasi dekat kampus & area strategis',
   heroBadge2: 'Detail kost & foto kamar lengkap',
-  apk: 'https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.1.3/CariKostKita-v1.1.3-release.apk',
+  apk: 'https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.1.4/CariKostKita-v1.1.4-release.apk',
   waNumber: '6281270008899',
   bannerActive: false,
   bannerText: '',

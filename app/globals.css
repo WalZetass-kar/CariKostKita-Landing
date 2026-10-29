@@ -54,17 +54,72 @@ img{max-width:100%}
 /* ---------------------------------------------------------------- Header */
 .site-header{
   position:sticky;top:0;z-index:50;
-  background:var(--bone);
-  border-bottom:1px solid var(--line);
+  background:rgba(252,250,245,0.86);
+  backdrop-filter:blur(18px) saturate(180%);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);
+  border-bottom:1px solid rgba(229,222,210,0.75);
+  transition:all .25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.nav-wrap{height:var(--header-h);display:flex;align-items:center;justify-content:space-between;gap:32px}
-.brand{display:inline-flex;align-items:center;gap:10px;color:var(--maroon);font-size:19px;font-weight:800;white-space:nowrap;letter-spacing:-.01em}
-.brand__mark{font-size:24px;line-height:1;display:flex;align-items:center}
-.nav-links{display:flex;gap:28px;align-items:stretch;height:100%}
-.nav-links a{display:flex;align-items:center;position:relative;font-size:14px;font-weight:600;color:var(--muted);transition:color .15s ease}
-.nav-links a:hover,.nav-links .active{color:var(--maroon)}
-.nav-links .active:after{content:'';position:absolute;bottom:14px;left:0;right:0;height:2px;background:var(--maroon)}
-.menu-toggle{display:none;border:0;background:none;color:var(--maroon);font-size:24px;cursor:pointer;padding:6px}
+.site-header--scrolled{
+  background:rgba(252,250,245,0.96);
+  box-shadow:0 10px 30px -4px rgba(121,15,19,0.08), 0 2px 6px rgba(0,0,0,0.03);
+  border-bottom:1px solid rgba(215,205,190,0.9);
+}
+.header-top-accent{
+  position:absolute;top:0;left:0;right:0;height:2.5px;
+  background:linear-gradient(90deg, transparent, var(--maroon), #E53E3E, var(--maroon), transparent);
+  opacity:0.9;
+}
+.nav-wrap{height:var(--header-h);display:flex;align-items:center;justify-content:space-between;gap:28px}
+.brand{display:inline-flex;align-items:center;gap:10px;color:var(--maroon);font-size:19px;font-weight:800;white-space:nowrap;letter-spacing:-.01em;transition:transform .15s ease}
+.brand:hover{transform:scale(1.02)}
+.brand__text{display:inline-flex;align-items:center;gap:8px}
+.brand__img{width:32px;height:32px;object-fit:contain;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+.brand__mark{
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg, var(--maroon), #9E1A20);
+  color:#fff;font-size:15px;border-radius:8px;
+  box-shadow:0 3px 8px rgba(121,15,19,0.22);
+}
+.brand__badge{
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:9999px;
+  background:var(--maroon-soft);color:var(--maroon);
+  border:1px solid rgba(121,15,19,0.18);
+  letter-spacing:0.02em;
+}
+.nav-links{display:flex;gap:6px;align-items:center;height:100%}
+.nav-links a{
+  display:inline-flex;align-items:center;position:relative;
+  padding:7px 14px;border-radius:9999px;
+  font-size:14px;font-weight:600;color:var(--muted);
+  transition:all .18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nav-links a:hover{
+  color:var(--maroon);
+  background:rgba(121,15,19,0.06);
+}
+.nav-links .active{
+  color:var(--maroon);
+  background:var(--maroon-soft);
+  font-weight:700;
+}
+.nav-links .active:after{display:none}
+.nav-download .download{
+  background:linear-gradient(135deg, var(--maroon) 0%, #8C1C22 100%);
+  box-shadow:0 4px 14px rgba(121,15,19,0.25);
+  border:1px solid rgba(255,255,255,0.18);
+  transition:all .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nav-download .download:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 20px rgba(121,15,19,0.36);
+}
+.menu-toggle{
+  display:none;border:1px solid rgba(121,15,19,0.15);background:var(--card);
+  color:var(--maroon);font-size:18px;cursor:pointer;padding:8px 10px;
+  border-radius:8px;transition:all .15s ease;
+}
+.menu-toggle:hover{background:var(--maroon-soft)}
 
 /* -------------------------------------------------------------- Tombol */
 .download{
@@ -139,13 +194,24 @@ img{max-width:100%}
   min-height:660px;position:relative;display:flex;flex-direction:column;
   justify-content:center;align-items:center;gap:22px;padding:18px 0;
 }
-.hero-3d-phone{position:relative;width:262px;height:535px;z-index:2;display:flex;align-items:center;justify-content:center}
+.hero-3d-phone{
+  position:relative;width:262px;height:535px;z-index:2;display:flex;align-items:center;justify-content:center;
+}
+.hero-3d-phone::before{
+  content:'';position:absolute;width:300px;height:300px;
+  background:radial-gradient(circle, rgba(248,113,113,0.32) 0%, rgba(121,15,19,0.18) 50%, transparent 72%);
+  border-radius:50%;filter:blur(30px);z-index:-1;pointer-events:none;
+}
 .hero-3d-img{
   width:100%;height:100%;object-fit:contain;display:block;
-  filter:drop-shadow(0 14px 26px rgba(20,4,4,.40));
+  filter:drop-shadow(0 18px 32px rgba(20,4,4,.45));
   /* Kemiringan halus lewat CSS, bukan dibakar ke dalam berkas gambar.
      Sumbernya resolusi penuh, jadi hasilnya tetap tajam. */
   transform:perspective(1500px) rotateY(-10deg) rotateX(3deg) rotateZ(-1.5deg);
+  transition:transform .35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-3d-phone:hover .hero-3d-img{
+  transform:perspective(1500px) rotateY(-4deg) rotateX(1deg) rotateZ(0deg) scale(1.025);
 }
 
 /* Chip filter kategori */
@@ -420,12 +486,25 @@ footer{background:var(--bone);color:var(--muted);border-top:1px solid var(--line
 
 @media (max-width:768px){
   .shell{width:calc(100% - 32px)}
-  .site-header{position:relative}
+  .site-header{position:sticky;top:0}
+  .brand__badge{display:none}
   .nav-wrap{height:58px;gap:12px}
   .nav-links,.nav-download{display:none}
-  .menu-toggle{display:block}
-  .mobile-menu{display:grid;gap:2px;padding:10px 16px 18px;border-top:1px solid var(--line);background:var(--bone)}
-  .mobile-menu>a:not(.download){padding:11px;font-size:15px;font-weight:600}
+  .menu-toggle{display:inline-flex;align-items:center;justify-content:center}
+  .mobile-menu{
+    display:grid;gap:4px;padding:12px 16px 20px;
+    border-top:1px solid rgba(229,222,210,0.8);
+    background:rgba(252,250,245,0.98);
+    backdrop-filter:blur(18px);
+    box-shadow:0 12px 30px rgba(0,0,0,0.08);
+  }
+  .mobile-menu>a:not(.download){
+    padding:12px 14px;font-size:15px;font-weight:600;border-radius:8px;
+    color:var(--ink);transition:all .15s ease;
+  }
+  .mobile-menu>a:not(.download):hover{
+    background:var(--maroon-soft);color:var(--maroon);
+  }
   .mobile-menu .download{margin-top:8px}
 
   .hero{min-height:auto}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -443,6 +443,7 @@ export default function LandingClient({
   const [open, setOpen] = useState<number | null>(0);
   const [phoneFilter, setPhoneFilter] = useState('Semua');
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showPopupModal, setShowPopupModal] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -491,11 +492,13 @@ export default function LandingClient({
   useEffect(() => {
     const onScroll = () => {
       const totalScroll = document.documentElement.scrollTop;
+      setIsScrolled(totalScroll > 15);
       const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
       if (windowHeight > 0) {
         setScrollProgress((totalScroll / windowHeight) * 100);
       }
     };
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
 
     const observer = new IntersectionObserver(
@@ -589,22 +592,26 @@ export default function LandingClient({
     >
       <a className="skip-link" href="#konten-utama">Lewati ke konten utama</a>
       {/* Header */}
-      <header className="site-header">
+      <header className={`site-header ${isScrolled ? 'site-header--scrolled' : ''}`}>
+        <div className="header-top-accent" aria-hidden="true" />
         <div className="shell nav-wrap">
-          <a className="brand" href="#beranda">
+          <a className="brand" href="#beranda" aria-label={`${appConfig.appName} Beranda`}>
             {appConfig.logoUrl && !logoFailed ? (
               <img
                 src={withRevision(appConfig.logoUrl, settingsRevision)}
                 alt=""
                 onError={() => setLogoFailed(true)}
-                style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
+                className="brand__img"
               />
             ) : (
               <span className="brand__mark">
                 <FontAwesomeIcon icon={faBuilding} />
               </span>
             )}
-            {appConfig.appName}
+            <span className="brand__text">
+              <span className="brand__name">{appConfig.appName}</span>
+              <span className="brand__badge">{appConfig.versionName || 'v1.1.4'}</span>
+            </span>
           </a>
 
           <nav className="nav-links" aria-label="Navigasi utama">
@@ -638,7 +645,9 @@ export default function LandingClient({
                 {item.label}
               </a>
             ))}
-            <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
+            <div className="mobile-menu__cta">
+              <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
+            </div>
           </nav>
         )}
       </header>
