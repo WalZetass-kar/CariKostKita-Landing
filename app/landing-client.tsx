@@ -132,8 +132,25 @@ function dismissPopupSignature(cfg: {
   }
 }
 
-const Button = ({ apk, light = false, label = 'Download APK' }: { apk: string; light?: boolean; label?: string }) => (
-  <a className={`download ${light ? 'download--light' : ''}`} href={apk} download>
+const Button = ({
+  apk,
+  light = false,
+  label = 'Download APK',
+  onDownloadClick,
+}: {
+  apk: string;
+  light?: boolean;
+  label?: string;
+  onDownloadClick?: () => void;
+}) => (
+  <a
+    className={`download ${light ? 'download--light' : ''}`}
+    href={apk}
+    download
+    onClick={() => {
+      if (onDownloadClick) onDownloadClick();
+    }}
+  >
     <FontAwesomeIcon icon={faDownload} />
     <span>{label}</span>
   </a>
@@ -623,7 +640,11 @@ export default function LandingClient({
           </nav>
 
           <div className="nav-download">
-            <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
+            <Button
+              apk={apk}
+              label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
+              onDownloadClick={() => setShowModal(true)}
+            />
           </div>
 
           <button
@@ -646,7 +667,11 @@ export default function LandingClient({
               </a>
             ))}
             <div className="mobile-menu__cta">
-              <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
+              <Button
+                apk={apk}
+                label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
+                onDownloadClick={() => setShowModal(true)}
+              />
             </div>
           </nav>
         )}
@@ -731,7 +756,11 @@ export default function LandingClient({
             </p>
 
             <div className="hero__actions">
-              <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
+              <Button
+                apk={apk}
+                label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
+                onDownloadClick={() => setShowModal(true)}
+              />
               <a className="outline-button" href={appConfig.heroCtaSecondaryLink || '#fitur'}>
                 {appConfig.heroCtaSecondaryLabel || 'Lihat Fitur'} <FontAwesomeIcon icon={faArrowRight} />
               </a>
@@ -1001,7 +1030,11 @@ export default function LandingClient({
             )}
 
             <div className="install-actions">
-              <Button apk={apk} label={appConfig.heroCtaPrimaryLabel || 'Download APK'} />
+              <Button
+                apk={apk}
+                label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
+                onDownloadClick={() => setShowModal(true)}
+              />
               {appConfig.securityModalActive && (
                 <button
                   type="button"
@@ -1036,7 +1069,12 @@ export default function LandingClient({
                 <FontAwesomeIcon icon={faWhatsapp} />
                 <span>{appConfig.ownerWaLabel || 'Daftar via WhatsApp'}</span>
               </a>
-              <Button apk={apk} light label={appConfig.ownerSecondaryLabel || 'Download Aplikasi'} />
+              <Button
+                apk={apk}
+                light
+                label={appConfig.ownerSecondaryLabel || 'Download Aplikasi'}
+                onDownloadClick={() => setShowModal(true)}
+              />
             </div>
           </div>
 
@@ -1186,7 +1224,12 @@ export default function LandingClient({
             <h2>{appConfig.finalCtaTitle || 'Yuk, Temukan Kost Terbaikmu Sekarang!'}</h2>
             <p>{appConfig.finalCtaDesc || `Download ${appConfig.appName} sekarang dan mulai pencarian kost impianmu di ${appConfig.targetCity}.`}</p>
           </div>
-          <Button apk={apk} light label={appConfig.finalCtaButtonLabel || 'Download APK Sekarang'} />
+          <Button
+            apk={apk}
+            light
+            label={appConfig.finalCtaButtonLabel || 'Download APK Sekarang'}
+            onDownloadClick={() => setShowModal(true)}
+          />
         </div>
       </section>
 
@@ -1281,37 +1324,39 @@ export default function LandingClient({
         </div>
       )}
 
-      {/* Android Play Protect Modal */}
-      {appConfig.securityModalActive && showModal && (
+      {/* Android Play Protect / Unknown Sources Modal */}
+      {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-box" role="dialog" aria-modal="true" aria-label={appConfig.securityModalTitle || 'Panduan Dialog Download Android'} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box" role="dialog" aria-modal="true" aria-label="Panduan Pasang Aplikasi CariKostKita" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="modal-close" onClick={() => setShowModal(false)} aria-label="Tutup dialog panduan">
               <FontAwesomeIcon icon={faXmark} />
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--maroon)', fontWeight: 700, fontSize: 16 }}>
               <FontAwesomeIcon icon={faTriangleExclamation} color="#D97706" />
-              <span>{appConfig.securityModalTitle || 'Panduan Dialog Download Android'}</span>
+              <span>Panduan Pasang Aplikasi (APK Android)</span>
             </div>
-            <p style={{ fontSize: 12, color: '#655955', marginTop: 10, lineHeight: 1.6 }}>
-              {appConfig.securityModalDesc || 'Saat mengunduh berkas APK di luar Google Play Store, peramban (Chrome) akan menampilkan pesan standar keamanan:'}
+            <p style={{ fontSize: 13, color: '#52433D', marginTop: 10, lineHeight: 1.6 }}>
+              File APK <b>{appConfig.versionName || 'v1.1.4'}</b> sedang diunduh ke perangkat Anda. Jika peramban (Chrome) menampilkan dialog peringatan standar, ikuti langkah berikut:
             </p>
-            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '12px 14px', borderRadius: 8, fontSize: 12, marginTop: 10, color: '#92400E', lineHeight: 1.6 }}>
-              <b>Langkah Mudah:</b>
-              <br />
-              1. Klik <b>&quot;Tetap Download&quot;</b> / <b>&quot;Download anyway&quot;</b>.
-              <br />
-              2. Buka berkas yang telah selesai diunduh.
-              <br />
-              3. Jika diminta izin sistem, aktifkan <b>&quot;Izinkan dari sumber ini&quot;</b>.
-              <br />
-              4. Klik <b>&quot;Instal&quot;</b> dan aplikasi siap digunakan!
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '14px 16px', borderRadius: 10, fontSize: 13, marginTop: 12, color: '#92400E', lineHeight: 1.7 }}>
+              <b style={{ display: 'block', marginBottom: 4, color: '#78350F' }}>🚀 3 Langkah Instalasi Mudah:</b>
+              1. Tekan tombol <b>&quot;Tetap Download&quot;</b> / <b>&quot;Download anyway&quot;</b> pada Chrome.<br />
+              2. Buka berkas yang telah selesai diunduh di panel notifikasi atau folder Download.<br />
+              3. Jika diminta izin sistem, aktifkan <b>&quot;Izinkan dari sumber ini&quot;</b>, lalu klik <b>&quot;Instal&quot;</b>.
             </div>
-            <p style={{ fontSize: 12, color: '#6B605A', marginTop: 10 }}>
-              {appConfig.securityModalNote || `Berkas APK ${appConfig.appName} (${appConfig.versionName}) 100% aman dan diverifikasi langsung dari repositori resmi proyek.`}
+            <p style={{ fontSize: 12, color: '#6B605A', marginTop: 12 }}>
+              🛡️ {appConfig.securityModalNote || `Berkas APK CariKostKita 100% aman, bebas iklan berbahaya, dan terenkripsi resmi.`}
             </p>
-            <div style={{ marginTop: 18, textAlign: 'right' }}>
-              <a className="download" href={apk} onClick={() => setShowModal(false)}>
-                Lanjut Download APK
+            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="download download--light"
+                onClick={() => setShowModal(false)}
+              >
+                Sudah Paham
+              </button>
+              <a className="download" href={apk} download onClick={() => setShowModal(false)}>
+                Unduh Ulang APK
               </a>
             </div>
           </div>
