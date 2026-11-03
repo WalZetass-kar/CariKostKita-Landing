@@ -436,11 +436,8 @@ export default function LandingClient({
             {/* Desktop Navigation */}
             <nav className="nav-links" aria-label="Navigasi Utama">
               <a href="#akomodasi">Akomodasi</a>
-              <a href="#aplikasi">Aplikasi</a>
+              <a href="#aplikasi">Fitur App</a>
               <a href="#cara-kerja">Cara Kerja</a>
-              <a href="#statistik">Statistik</a>
-              <a href="#kepercayaan">Kepercayaan</a>
-              <a href="#pemilik">Untuk Pemilik</a>
               <a href="#faq">FAQ</a>
             </nav>
 
@@ -513,15 +510,11 @@ export default function LandingClient({
 
       {/* ------------------------------------------------------- Hero Section */}
       <section className="hero-section">
+        <div className="hero-city-bg" />
         <div className="shell">
           <div className="hero-grid">
             {/* Left Editorial Copy */}
             <div>
-              <div className="eyebrow-badge">
-                <FontAwesomeIcon icon={faShieldHalved} />
-                <span>Properti Kost Terverifikasi di Pekanbaru</span>
-              </div>
-
               <h1 className="hero-title">
                 {appConfig.heroHeadline && appConfig.heroHeadline !== 'Temukan Kost Nyaman & Terpercaya di Pekanbaru'
                   ? appConfig.heroHeadline
@@ -546,7 +539,7 @@ export default function LandingClient({
                   <span>Download Aplikasi APK</span>
                 </a>
 
-                <a href="#akomodasi" className="btn-secondary">
+                <a href="#akomodasi" className="btn-hero-outline">
                   <span>Jelajahi Kost</span>
                   <FontAwesomeIcon icon={faArrowRight} />
                 </a>
@@ -555,7 +548,7 @@ export default function LandingClient({
               {/* Specs Meta */}
               <div className="hero-meta">
                 <span className="hero-meta-item">
-                  <FontAwesomeIcon icon={faAndroid} className="text-[var(--brand)]" />
+                  <FontAwesomeIcon icon={faAndroid} className="text-amber-300" />
                   <span>Versi {appConfig.versionName || 'v1.3.0'}</span>
                 </span>
                 <span className="hero-meta-dot" />
@@ -566,7 +559,7 @@ export default function LandingClient({
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  className="text-[var(--brand)] font-bold underline cursor-pointer hover:opacity-80"
+                  className="text-amber-200 font-bold underline cursor-pointer hover:text-white transition-colors"
                 >
                   Panduan Pasang APK
                 </button>
@@ -600,17 +593,6 @@ export default function LandingClient({
             {/* Right Visual Phone Mockup Composition */}
             <div className="hero-visual-wrap">
               <div className="hero-visual-canvas">
-                {/* Layered Floating Card 1 */}
-                <div className="hero-floating-card hero-floating-card--top">
-                  <div className="floating-card-icon">
-                    <FontAwesomeIcon icon={faWhatsapp} className="text-[#25D366]" />
-                  </div>
-                  <div>
-                    <h3 className="floating-card-title">Kontak Langsung</h3>
-                    <p className="floating-card-subtitle">WhatsApp pemilik tanpa calo</p>
-                  </div>
-                </div>
-
                 {/* Smartphone Phone Frame */}
                 <div className="hero-phone-frame">
                   <Image
@@ -621,17 +603,6 @@ export default function LandingClient({
                     priority
                     unoptimized
                   />
-                </div>
-
-                {/* Layered Floating Card 2 */}
-                <div className="hero-floating-card hero-floating-card--bottom">
-                  <div className="floating-card-icon">
-                    <FontAwesomeIcon icon={faBolt} className="text-[#C58B39]" />
-                  </div>
-                  <div>
-                    <h3 className="floating-card-title">Listrik Transparan</h3>
-                    <p className="floating-card-subtitle">All-in atau token 900W</p>
-                  </div>
                 </div>
               </div>
             </div>
