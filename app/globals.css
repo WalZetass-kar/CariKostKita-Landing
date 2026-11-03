@@ -476,6 +476,12 @@ img {
   transform: translateY(-4px);
 }
 
+.hero-phone-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .hero-phone-device {
   position: relative;
   background: #170909;
