@@ -6,7 +6,7 @@ import path from "path";
 const APK_MIME = "application/vnd.android.package-archive";
 // Fallback resmi bila berkas tidak tersedia di dalam container serverless.
 const GITHUB_FALLBACK =
-  "https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.2.0/CariKostKita-v1.2.0-release.apk";
+  "https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.3.0/CariKostKita-v1.3.0-release.apk";
 
 export async function GET(
   request: NextRequest,
