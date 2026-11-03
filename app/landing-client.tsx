@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBuilding,
   faDownload,
   faSearch,
   faLocationDot,
-  faHeart,
   faShieldHalved,
   faBolt,
   faLock,
@@ -15,20 +15,23 @@ import {
   faArrowsRotate,
   faFileLines,
   faSliders,
-  faCube,
   faCheck,
   faBars,
   faXmark,
   faChevronDown,
   faChevronUp,
-  faTriangleExclamation,
   faArrowRight,
   faUsers,
   faPhone,
   faEnvelope,
   faMapPin,
-  faBullhorn,
   faStar,
+  faCalendarCheck,
+  faPlug,
+  faBed,
+  faBath,
+  faWifi,
+  faMotorcycle,
 } from '@fortawesome/free-solid-svg-icons';
 import {
   faAndroid,
@@ -47,6 +50,15 @@ import {
   type RealtimeStatus,
   type SettingsUpdatedPayload,
 } from '../lib/landing-realtime';
+import {
+  defaultConfig,
+  resolveSettings,
+  type AppConfigState,
+  type NavLinkItem,
+  type TrustItem,
+  type FeatureItem,
+  type FaqItem,
+} from '../lib/landing-config';
 
 config.autoAddCss = false;
 
@@ -70,14 +82,18 @@ const ICON_MAP: Record<string, IconDefinition> = {
   sync: faArrowsRotate,
   building: faBuilding,
   download: faDownload,
-  heart: faHeart,
   users: faUsers,
   phone: faPhone,
   envelope: faEnvelope,
   mappin: faMapPin,
-  bullhorn: faBullhorn,
   check: faCheck,
   star: faStar,
+  calendar: faCalendarCheck,
+  plug: faPlug,
+  bed: faBed,
+  bath: faBath,
+  wifi: faWifi,
+  motorcycle: faMotorcycle,
 };
 
 function resolveFaIcon(name?: string, fallback: IconDefinition = faCheck): IconDefinition {
@@ -86,12 +102,6 @@ function resolveFaIcon(name?: string, fallback: IconDefinition = faCheck): IconD
   return ICON_MAP[clean] || fallback;
 }
 
-/**
- * Append the settings revision to a remote media URL so replacing a file
- * (even under the same name/path) is reflected instantly instead of being
- * stuck behind browser/proxy image caches. Data/blob URLs are returned
- * untouched because query strings would corrupt them.
- */
 function withRevision(url: string | undefined, revision: number): string {
   if (!url) return '';
   if (revision <= 0) return url;
@@ -101,7 +111,6 @@ function withRevision(url: string | undefined, revision: number): string {
   return `${url}${sep}v=${revision}`;
 }
 
-/** Canonical signature of the pop-up content; dismissal is stored per signature. */
 function popupSignatureOf(cfg: {
   popupTitle: string;
   popupContent: string;
@@ -127,57 +136,8 @@ function dismissPopupSignature(cfg: {
 }): void {
   try {
     sessionStorage.setItem('ckk_popup_dismissed_sig', popupSignatureOf(cfg));
-  } catch (_) {
-    /* storage unavailable: dismissal lasts for this view only */
-  }
+  } catch (_) {}
 }
-
-const Button = ({
-  apk,
-  light = false,
-  label = 'Download APK',
-  onDownloadClick,
-}: {
-  apk: string;
-  light?: boolean;
-  label?: string;
-  onDownloadClick?: () => void;
-}) => (
-  <a
-    className={`download ${light ? 'download--light' : ''}`}
-    href={apk}
-    download
-    onClick={() => {
-      if (onDownloadClick) onDownloadClick();
-    }}
-  >
-    <FontAwesomeIcon icon={faDownload} />
-    <span>{label}</span>
-  </a>
-);
-
-import {
-  defaultConfig,
-  resolveSettings,
-  type AppConfigState,
-  type NavLinkItem,
-  type TrustItem,
-  type FeatureItem,
-  type InstallStepItem,
-  type OwnerStepItem,
-  type FaqItem,
-} from '../lib/landing-config';
-
-interface PromoAd {
-  id: string | number;
-  title: string;
-  description?: string;
-  image?: string;
-  image_url?: string;
-  link?: string;
-  target_url?: string;
-}
-
 
 async function safeParseResponse(res: Response | null | undefined) {
   if (!res || !res.ok) return null;
@@ -190,6 +150,28 @@ async function safeParseResponse(res: Response | null | undefined) {
   }
 }
 
+interface KostListing {
+  id: number | string;
+  name?: string;
+  nama_kost?: string;
+  district?: string;
+  kecamatan?: string;
+  city?: string;
+  kota?: string;
+  address?: string;
+  alamat?: string;
+  tipe_kost?: string;
+  gender_type?: string;
+  price?: number;
+  harga?: number;
+  price_min?: number;
+  top_facilities?: string[];
+  facilities?: string[] | any;
+  thumbnail_url?: string | null;
+  image_urls?: string[];
+  verification_status?: string;
+}
+
 export default function LandingClient({
   initialSettings,
 }: {
@@ -198,1056 +180,1306 @@ export default function LandingClient({
   const [appConfig, setAppConfig] = useState<AppConfigState>(() =>
     resolveSettings(initialSettings, defaultConfig)
   );
-  const [promoAds, setPromoAds] = useState<PromoAd[]>([]);
-  // Realtime sync state: appliedRevisionRef is the source of truth for
-  // dedupe + out-of-order guards (refs avoid stale closures in callbacks).
-  const [settingsRevision, setSettingsRevision] = useState(0);
   const [realtimeStatus, setRealtimeStatus] = useState<RealtimeStatus>('CONNECTING');
+  const [settingsRevision, setSettingsRevision] = useState(0);
   const appliedRevisionRef = useRef(0);
-  // Content signature: the real guard against duplicate or out-of-order
-  // deliveries. It works even when the store has no usable revision yet.
   const appliedContentRef = useRef<string>('');
 
-  const fetchPromoAds = useCallback(async () => {
-    try {
-      const adsResult = await fetch('/api/ads', { cache: 'no-store' });
-      const adsJson = await safeParseResponse(adsResult);
-      if (adsJson) {
-        setPromoAds(Array.isArray(adsJson.data) ? adsJson.data : []);
-      }
-    } catch (e) {
-      console.error('Failed to fetch promo ads', e);
-    }
-  }, []);
-
-  const fetchConfig = useCallback(async (reason = 'init') => {
-      try {
-        const [fullResult, proxyResult, settingsResult, releaseResult] = await Promise.allSettled([
-          fetch(publicApiUrl + '/api/v1/public/settings', { cache: 'no-store' }),
-          fetch('/api/settings', { cache: 'no-store' }),
-          fetch(publicApiUrl + '/settings', { cache: 'no-store' }),
-          fetch(publicApiUrl + '/latest-release', { cache: 'no-store' }),
-        ]);
-        const [fullJson, proxyJson, setJson, relJson] = await Promise.all([
-          fullResult.status === 'fulfilled'
-            ? safeParseResponse(fullResult.value)
-            : Promise.resolve(null),
-          proxyResult.status === 'fulfilled'
-            ? safeParseResponse(proxyResult.value)
-            : Promise.resolve(null),
-          settingsResult.status === 'fulfilled'
-            ? safeParseResponse(settingsResult.value)
-            : Promise.resolve(null),
-          releaseResult.status === 'fulfilled'
-            ? safeParseResponse(releaseResult.value)
-            : Promise.resolve(null),
-        ]);
-
-        // Merge settings: proxyJson contains live Admin-Gue + FastAPI merged configuration
-        const full = {
-          ...(fullJson?.data || {}),
-          ...(proxyJson?.data || {}),
-        };
-
-        // Revision guard: ignore stale / duplicate deliveries so rapid
-        // sequential admin saves always converge on the newest state.
-        const incomingRevision = Number(full.revision ?? 0) || 0;
-        if (incomingRevision > 0) {
-          appliedRevisionRef.current = incomingRevision;
-          setSettingsRevision(incomingRevision);
-        }
-
-        const isFalse = (val: any) => val === false || val === 'false' || val === 0 || val === '0';
-        const isTrue = (val: any) => val === true || val === 'true' || val === 1 || val === '1';
-
-        const popupActiveResolved = isFalse(full.popupActive) || isFalse(full.popup_active)
-          ? false
-          : (isTrue(full.popupActive) || isTrue(full.popup_active) ? true : false);
-
-        // Signature-based dismissal: a previously dismissed pop-up must
-        // reappear when the admin publishes new content, and must vanish
-        // instantly (without relying on timers/storage) when deactivated.
-        const nextPopupTitle = full.popupTitle ?? full.popup_title ?? '';
-        const nextPopupContent = full.popupContent ?? full.popup_content ?? '';
-        const nextPopupImage = full.popupImageUrl ?? full.popup_image_url ?? '';
-        const nextPopupLabel = full.popupButtonLabel ?? full.popup_button_label ?? '';
-        const nextPopupUrl = full.popupButtonUrl ?? full.popup_button_url ?? '';
-        const popupSignature = [
-          nextPopupTitle, nextPopupContent, nextPopupImage, nextPopupLabel, nextPopupUrl,
-        ].join('|');
-        if (popupActiveResolved) {
-          try {
-            const dismissedSig = sessionStorage.getItem('ckk_popup_dismissed_sig');
-            if (dismissedSig !== popupSignature) {
-              setShowPopupModal(true);
-            }
-          } catch (_) {
-            setShowPopupModal(true);
-          }
-        } else {
-          // Admin disabled/deleted the pop-up: hide immediately and drop any
-          // pending visible state so it cannot resurrect from stale state.
-          setShowPopupModal(false);
-        }
-
-        setAppConfig((current) => {
-          const next = resolveSettings(full, current);
-          // Only commit when the content really changed. This keeps duplicate
-          // or out-of-order deliveries from re-rendering the page.
-          const signature = JSON.stringify(next);
-          if (reason !== 'init' && signature === appliedContentRef.current) {
-            return current;
-          }
-          appliedContentRef.current = signature;
-          return next;
-        });
-      } catch (e) {
-        console.error('Failed to fetch dynamic settings', e);
-      }
-  }, [fetchPromoAds]);
-
-  // Initial load: full settings + promo ads.
-  useEffect(() => {
-    fetchConfig('init');
-    fetchPromoAds();
-  }, [fetchConfig, fetchPromoAds]);
-
-  // PRIMARY realtime path: Supabase Realtime broadcast (published by the
-  // admin session only after FastAPI confirms the commit) + postgres_changes
-  // for direct database edits. Selective state refresh, never a reload.
-  useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-    let cancelled = false;
-    subscribeLandingRealtime({
-      onSettingsUpdated: (payload: SettingsUpdatedPayload) => {
-        const incoming = Number(payload?.revision ?? 0) || 0;
-        if (incoming > 0 && incoming <= appliedRevisionRef.current) return; // dedupe/out-of-order
-        fetchConfig('realtime');
-      },
-      onAdsChanged: () => {
-        fetchPromoAds();
-      },
-      onStatusChange: (status: RealtimeStatus) => {
-        setRealtimeStatus(status);
-      },
-    }).then((fn) => {
-      if (cancelled) {
-        fn();
-        return;
-      }
-      unsubscribe = fn;
-    });
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
-  }, [fetchConfig, fetchPromoAds]);
-
-  // Safety net that also runs while Realtime reports SUBSCRIBED. A broadcast
-  // can be missed (tab suspended, channel reconnected, an older Admin tab that
-  // never published), and trusting the status alone left open pages stale.
-  // Poll the lightweight version pointer every 10s while realtime is down, or
-  // every 30s as a slower safety net when it is up. Only re-fetch the full
-  // document when the revision actually moved. When the store has no usable
-  // revision yet, a full re-fetch runs every third tick so the page converges.
-  // Always re-validate when the tab becomes visible or regains focus.
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') fetchConfig('visibility');
-    };
-    const onFocus = () => fetchConfig('focus');
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onFocus);
-    let ticks = 0;
-    const intervalMs = realtimeStatus === 'SUBSCRIBED' ? 30000 : 10000;
-    const timer = setInterval(async () => {
-      ticks += 1;
-      try {
-        const res = await fetch(publicApiUrl + '/api/v1/public/settings/version', {
-          cache: 'no-store',
-        });
-        const json = await safeParseResponse(res);
-        const revision = Number(json?.data?.revision ?? 0) || 0;
-        if (revision > 0) {
-          if (revision !== appliedRevisionRef.current) {
-            await fetchConfig('fallback-poll');
-          }
-          return;
-        }
-      } catch {
-        // A failed version check must never break the page.
-      }
-      // No usable revision: fall back to a full re-fetch every 30s/90s.
-      if (ticks % 3 === 0) await fetchConfig('fallback-poll');
-    }, intervalMs);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onFocus);
-      clearInterval(timer);
-    };
-  }, [fetchConfig, realtimeStatus]);
-
-  // Realtime client-side sync of document title, description, favicon, app icon, and OG image.
-  // NOTE (browser limitation): updating the <link rel="icon"> href applies to
-  // new navigations/tabs; browsers aggressively cache favicons per origin and
-  // may keep showing the old icon until the user hard-refreshes or clears
-  // site data. The revision query string below is the strongest signal a web
-  // page can send "” it cannot force-invalidate the browser's favicon cache.
-  useEffect(() => {
-    if (appConfig.siteTitle) {
-      document.title = appConfig.siteTitle;
-    }
-    if (appConfig.siteDescription) {
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute('content', appConfig.siteDescription);
-    }
-    if (appConfig.metaKeywords) {
-      let metaKw = document.querySelector('meta[name="keywords"]');
-      if (!metaKw) {
-        metaKw = document.createElement('meta');
-        metaKw.setAttribute('name', 'keywords');
-        document.head.appendChild(metaKw);
-      }
-      metaKw.setAttribute('content', appConfig.metaKeywords);
-    }
-    if (appConfig.faviconUrl) {
-      let linkIcon = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
-      if (!linkIcon) {
-        linkIcon = document.createElement('link');
-        linkIcon.setAttribute('rel', 'icon');
-        document.head.appendChild(linkIcon);
-      }
-      linkIcon.setAttribute('href', withRevision(appConfig.faviconUrl, settingsRevision));
-    }
-    if (appConfig.appIconUrl) {
-      let appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
-      if (!appleIcon) {
-        appleIcon = document.createElement('link');
-        appleIcon.setAttribute('rel', 'apple-touch-icon');
-        document.head.appendChild(appleIcon);
-      }
-      appleIcon.setAttribute('href', withRevision(appConfig.appIconUrl, settingsRevision));
-    }
-    if (appConfig.ogImageUrl) {
-      const ogImg = document.querySelector('meta[property="og:image"]');
-      if (ogImg) ogImg.setAttribute('content', withRevision(appConfig.ogImageUrl, settingsRevision));
-    }
-  }, [appConfig.siteTitle, appConfig.siteDescription, appConfig.metaKeywords, appConfig.faviconUrl, appConfig.appIconUrl, appConfig.ogImageUrl, settingsRevision]);
-
-  // A failed image load must not freeze the logo forever: retry the newest
-  // URL as soon as the admin publishes a replacement.
-  useEffect(() => {
-    setLogoFailed(false);
-  }, [appConfig.logoUrl]);
-  useEffect(() => {
-    setFooterLogoFailed(false);
-  }, [appConfig.footerLogoUrl, appConfig.logoUrl]);
-
-  // A dismissed announcement banner belongs to its content: show the banner
-  // again automatically when the admin publishes a new message.
-  const bannerSignature = `${appConfig.bannerText}|${appConfig.bannerLink}|${appConfig.bannerType}`;
-  useEffect(() => {
-    setBannerDismissed(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bannerSignature]);
-
-  const apk = appConfig.apk;
-  const waNumber = appConfig.waNumber;
-  const waHelpUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Halo Admin ${appConfig.appName}, saya butuh informasi seputar aplikasi kost ${appConfig.targetCity}.`)}`;
-  const waOwnerUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(`Halo Admin ${appConfig.appName}, saya pemilik kost di ${appConfig.targetCity} ingin mendaftarkan properti saya.`)}`;
-
-  const [menu, setMenu] = useState(false);
-  const [open, setOpen] = useState<number | null>(0);
-  const [phoneFilter, setPhoneFilter] = useState('Semua');
-  const [scrollProgress, setScrollProgress] = useState(0);
+  // UI state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showPopupModal, setShowPopupModal] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [logoFailed, setLogoFailed] = useState(false);
-  const [footerLogoFailed, setFooterLogoFailed] = useState(false);
-  const [heroMockupFailed, setHeroMockupFailed] = useState(false);
-  const [installMockupFailed, setInstallMockupFailed] = useState(false);
-  const [activeInstallStep, setActiveInstallStep] = useState(0);
-  const [completedInstallSteps, setCompletedInstallSteps] = useState<number[]>([]);
   const [legalModal, setLegalModal] = useState<{ open: boolean; title: string; content: string }>({
     open: false,
     title: '',
     content: '',
   });
 
-  const handleInstallStepClick = (stepIndex: number) => {
-    // Langkah terakhir hanya menampilkan simulasi selesai; ia tidak boleh
-    // me-reset progres karena mockup-nya benar-benar ada.
-    setActiveInstallStep(stepIndex);
-    setCompletedInstallSteps((completedSteps) =>
-      completedSteps.includes(stepIndex)
-        ? completedSteps
-        : [...completedSteps, stepIndex]
-    );
-  };
+  // Accommodations state
+  const [kosts, setKosts] = useState<KostListing[]>([]);
+  const [loadingKosts, setLoadingKosts] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<'ALL' | 'PUTRA' | 'PUTRI' | 'CAMPUR'>('ALL');
 
-  // Escape menutup modal yang sedang terbuka.
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (legalModal.open) {
-        setLegalModal({ open: false, title: '', content: '' });
-      } else if (showModal) {
-        setShowModal(false);
-      } else if (showPopupModal) {
-        setShowPopupModal(false);
-        dismissPopupSignature(appConfig);
-      } else if (menu) {
-        setMenu(false);
+  // App Showcase state
+  const [selectedShowcaseIndex, setSelectedShowcaseIndex] = useState(0);
+
+  // FAQ accordion state
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  // Fallback images
+  const localRoomImages = [
+    '/rooms/kost-room-1.jpg',
+    '/rooms/kost-room-2.jpg',
+    '/rooms/kost-room-3.jpg',
+    '/rooms/kost-room-4.jpg',
+    '/rooms/kost-room-5.jpg',
+    '/rooms/kost-room-6.jpg',
+  ];
+
+  const showcaseFeatures = [
+    {
+      title: 'Filter Radius Kampus & Landmark',
+      desc: 'Cari hunian terdekat dari kampus UNRI Panam, UIR Marpoyan, UIN Suska, atau area perkantoran Kota Pekanbaru dalam radius presisi.',
+      mockup: '/mockup-hero-semua.webp',
+      icon: faLocationDot,
+    },
+    {
+      title: 'Transparansi Biaya & Listrik All-in',
+      desc: 'Ketahui detail fasilitas sejak awal: apakah listrik sudah termasuk (all-in) atau menggunakan token mandiri 900W.',
+      mockup: '/mockup-hero-putra.webp',
+      icon: faBolt,
+    },
+    {
+      title: 'Fitur Roommate Matchmaker',
+      desc: 'Cari calon teman sekamar yang satu kampus dan satu jurusan dengan preferensi hobi serta budget seimbang untuk hemat biaya.',
+      mockup: '/mockup-hero-putri.webp',
+      icon: faUsers,
+    },
+    {
+      title: 'Kontak Langsung Pemilik via WhatsApp',
+      desc: 'Terhubung ke pemilik sah kost dalam 1 ketukan tanpa potongan komisi calo atau biaya administrasi perantara sepeser pun.',
+      mockup: '/mockup-hero-campur.webp',
+      icon: faWhatsapp,
+    },
+  ];
+
+  // Fetch kosts from API
+  const fetchKosts = useCallback(async (filter: 'ALL' | 'PUTRA' | 'PUTRI' | 'CAMPUR') => {
+    setLoadingKosts(true);
+    try {
+      const filterParam = filter === 'ALL' ? '' : `&tipe_kost=${filter}`;
+      const res = await fetch(`/api/kost?page_size=8${filterParam}`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        setKosts(Array.isArray(json.data) ? json.data : []);
       }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [legalModal.open, showModal, showPopupModal, menu, appConfig]);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const totalScroll = document.documentElement.scrollTop;
-      setIsScrolled(totalScroll > 15);
-      const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      if (windowHeight > 0) {
-        setScrollProgress((totalScroll / windowHeight) * 100);
-      }
-    };
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
-    );
-
-    const observeAll = () => {
-      document
-        .querySelectorAll('.reveal-on-scroll:not(.is-visible)')
-        .forEach((el) => observer.observe(el));
-    };
-    observeAll();
-
-    // Konten CMS dimuat setelah halaman ter-render (mis. banner promo),
-    // jadi elemen baru harus ikut diobservasi.
-    const mutations = new MutationObserver(observeAll);
-    mutations.observe(document.body, { childList: true, subtree: true });
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      observer.disconnect();
-      mutations.disconnect();
-    };
+    } catch (e) {
+      console.error('Failed to fetch accommodations', e);
+    } finally {
+      setLoadingKosts(false);
+    }
   }, []);
 
-  // Filtered & mapped navigation links
-  const activeNavLinks = (appConfig.navLinks || [])
-    .filter((item) => item.is_active !== false)
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map((item) => ({
-      href: item.href || item.url || '#',
-      label: item.label,
-    }));
+  useEffect(() => {
+    fetchKosts(activeFilter);
+  }, [activeFilter, fetchKosts]);
 
-  // Dynamic Trust Items derived from appConfig
-  const activeTrust = (appConfig.trustItems || [])
-    .filter((item) => item.is_active !== false)
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map((item) => ({
-      icon: resolveFaIcon(item.icon, faShieldHalved),
-      title: item.title,
-      desc: item.desc,
-    }));
+  // Fetch configuration
+  const fetchConfig = useCallback(async (reason = 'init') => {
+    try {
+      const [fullResult, proxyResult] = await Promise.allSettled([
+        fetch(publicApiUrl + '/api/v1/public/settings', { cache: 'no-store' }),
+        fetch('/api/settings', { cache: 'no-store' }),
+      ]);
+      const [fullJson, proxyJson] = await Promise.all([
+        fullResult.status === 'fulfilled' ? safeParseResponse(fullResult.value) : Promise.resolve(null),
+        proxyResult.status === 'fulfilled' ? safeParseResponse(proxyResult.value) : Promise.resolve(null),
+      ]);
 
-  // Dynamic Features derived from appConfig
-  const activeFeatures = (appConfig.featureItems || [])
-    .filter((item) => item.is_active !== false)
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map((item) => ({
-      icon: resolveFaIcon(item.icon, faSearch),
-      title: item.title,
-      desc: item.desc,
-    }));
+      const full = {
+        ...(fullJson?.data || {}),
+        ...(proxyJson?.data || {}),
+      };
 
-  // Dynamic Install Steps
-  const activeInstallSteps = (appConfig.installSteps || [])
-    .filter((item) => item.is_active !== false)
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map((item, idx) => ({
-      n: item.step_number || item.n || String(idx + 1),
-      t: item.title || item.t || `Langkah ${idx + 1}`,
-      d: item.desc || item.d || '',
-    }));
+      const incomingRevision = Number(full.revision ?? 0) || 0;
+      if (incomingRevision > 0) {
+        appliedRevisionRef.current = incomingRevision;
+        setSettingsRevision(incomingRevision);
+      }
 
-  // Dynamic Owner Steps
-  const activeOwnerSteps = (appConfig.ownerSteps || [])
-    .filter((item: any) => typeof item === 'string' || item.is_active !== false)
-    .sort((a: any, b: any) => ((typeof a === 'object' && a?.order) || 0) - ((typeof b === 'object' && b?.order) || 0))
-    .map((item: any) => (typeof item === 'string' ? item : item.title || item.text || ''));
+      const isFalse = (val: any) => val === false || val === 'false' || val === 0 || val === '0';
+      const isTrue = (val: any) => val === true || val === 'true' || val === 1 || val === '1';
 
-  // Dynamic FAQs derived from appConfig
-  const activeFaqs = (appConfig.faqItems || [])
-    .filter((item) => item.is_active !== false)
-    .sort((a, b) => (a.order || 0) - (b.order || 0))
-    .map((item) => [item.question || item.q || '', item.answer || item.a || ''] as [string, string]);
+      const popupActiveResolved =
+        isFalse(full.popupActive) || isFalse(full.popup_active)
+          ? false
+          : isTrue(full.popupActive) || isTrue(full.popup_active)
+          ? true
+          : false;
+
+      const nextPopupTitle = full.popupTitle ?? full.popup_title ?? '';
+      const nextPopupContent = full.popupContent ?? full.popup_content ?? '';
+      const nextPopupImage = full.popupImageUrl ?? full.popup_image_url ?? '';
+      const nextPopupLabel = full.popupButtonLabel ?? full.popup_button_label ?? '';
+      const nextPopupUrl = full.popupButtonUrl ?? full.popup_button_url ?? '';
+      const popupSignature = [
+        nextPopupTitle,
+        nextPopupContent,
+        nextPopupImage,
+        nextPopupLabel,
+        nextPopupUrl,
+      ].join('|');
+
+      if (popupActiveResolved) {
+        try {
+          const dismissedSig = sessionStorage.getItem('ckk_popup_dismissed_sig');
+          if (dismissedSig !== popupSignature) {
+            setShowPopupModal(true);
+          }
+        } catch (_) {
+          setShowPopupModal(true);
+        }
+      } else {
+        setShowPopupModal(false);
+      }
+
+      setAppConfig((current) => {
+        const next = resolveSettings(full, current);
+        const signature = JSON.stringify(next);
+        if (reason !== 'init' && signature === appliedContentRef.current) {
+          return current;
+        }
+        appliedContentRef.current = signature;
+        return next;
+      });
+    } catch (e) {
+      console.error('Failed to fetch dynamic settings', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchConfig('init');
+  }, [fetchConfig]);
+
+  // Realtime subscription
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+
+    subscribeLandingRealtime({
+      onSettingsUpdated: (payload: SettingsUpdatedPayload) => {
+        const incoming = Number(payload?.revision ?? 0) || 0;
+        if (incoming > 0 && incoming <= appliedRevisionRef.current) return;
+        fetchConfig('realtime');
+      },
+      onAdsChanged: () => {},
+      onStatusChange: (status: RealtimeStatus) => {
+        if (!cancelled) setRealtimeStatus(status);
+      },
+    }).then((unsub) => {
+      if (cancelled) {
+        if (unsub) unsub();
+      } else {
+        unsubscribe = unsub;
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [fetchConfig]);
+
+  // Scroll listener
+  useEffect(() => {
+    const onScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Escape key listener for modals
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (legalModal.open) setLegalModal({ open: false, title: '', content: '' });
+        else if (showModal) setShowModal(false);
+        else if (showPopupModal) {
+          setShowPopupModal(false);
+          dismissPopupSignature(appConfig);
+        } else if (mobileMenuOpen) setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [legalModal.open, showModal, showPopupModal, mobileMenuOpen, appConfig]);
+
+  const apk = appConfig.apk || '/releases/CariKostKita-v1.3.0-release.apk';
+  const waNumber = appConfig.waNumber || '6285272160879';
+  const waHelpUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(
+    `Halo Admin ${appConfig.appName}, saya ingin bertanya mengenai pencarian kost di ${appConfig.targetCity}.`
+  )}`;
+  const waOwnerUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(
+    `Halo Admin ${appConfig.appName}, saya pemilik properti di ${appConfig.targetCity} ingin mendaftarkan unit kost saya.`
+  )}`;
+
+  const handleDownloadClick = () => {
+    setShowModal(true);
+  };
+
+  const formatPrice = (priceVal?: number) => {
+    if (!priceVal || priceVal <= 0) return 'Hubungi Pemilik';
+    return `Rp ${priceVal.toLocaleString('id-ID')}`;
+  };
 
   return (
-    <div
-      style={
-        {
-          '--maroon': appConfig.brandColor || '#790F13',
-        } as React.CSSProperties
-      }
-    >
-      <a className="skip-link" href="#konten-utama">Lewati ke konten utama</a>
-      {/* Header */}
+    <div className="min-h-screen flex flex-col bg-[#FCFCFA]">
+      {/* ------------------------------------------------------------- Header */}
       <header className={`site-header ${isScrolled ? 'site-header--scrolled' : ''}`}>
-        <div className="header-top-accent" aria-hidden="true" />
-        <div className="shell nav-wrap">
-          <a className="brand" href="#beranda" aria-label={`${appConfig.appName} Beranda`}>
-            {appConfig.logoUrl && !logoFailed ? (
-              <img
-                src={withRevision(appConfig.logoUrl, settingsRevision)}
-                alt=""
-                onError={() => setLogoFailed(true)}
-                className="brand__img"
-              />
-            ) : (
-              <span className="brand__mark">
+        <div className="shell">
+          <div className="nav-wrap">
+            <a href="#" className="brand" aria-label="Beranda CariKostKita">
+              <div className="brand__mark">
                 <FontAwesomeIcon icon={faBuilding} />
-              </span>
-            )}
-            <span className="brand__text">
-              <span className="brand__name">{appConfig.appName}</span>
-              <span className="brand__badge">{appConfig.versionName || 'v1.1.4'}</span>
-            </span>
-          </a>
+              </div>
+              <div className="brand__text">
+                <span>{appConfig.appName || 'CariKostKita'}</span>
+                <span className="brand__badge">Pekanbaru</span>
+              </div>
+            </a>
 
-          <nav className="nav-links" aria-label="Navigasi utama">
-            {activeNavLinks.map((item, i) => (
-              <a className={i === 0 ? 'active' : ''} href={item.href} key={item.href + i}>
-                {item.label}
+            {/* Desktop Navigation */}
+            <nav className="nav-links" aria-label="Navigasi Utama">
+              <a href="#akomodasi">Akomodasi</a>
+              <a href="#aplikasi">Aplikasi</a>
+              <a href="#cara-kerja">Cara Kerja</a>
+              <a href="#statistik">Statistik</a>
+              <a href="#kepercayaan">Kepercayaan</a>
+              <a href="#pemilik">Untuk Pemilik</a>
+              <a href="#faq">FAQ</a>
+            </nav>
+
+            {/* Desktop Download Action */}
+            <div className="hidden lg:flex items-center gap-3">
+              <a
+                href={apk}
+                className="btn-primary"
+                onClick={handleDownloadClick}
+                download
+              >
+                <FontAwesomeIcon icon={faDownload} />
+                <span>Download APK ({appConfig.versionName || 'v1.3.0'})</span>
               </a>
-            ))}
-          </nav>
+            </div>
 
-          <div className="nav-download">
-            <Button
-              apk={apk}
-              label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
-              onDownloadClick={() => setShowModal(true)}
-            />
+            {/* Mobile Menu Toggle */}
+            <button
+              type="button"
+              className="menu-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Tutup navigasi' : 'Buka navigasi'}
+            >
+              <FontAwesomeIcon icon={mobileMenuOpen ? faXmark : faBars} />
+            </button>
           </div>
-
-          <button
-            className="menu-toggle"
-            type="button"
-            onClick={() => setMenu(!menu)}
-            aria-label={menu ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
-            aria-expanded={menu}
-            aria-controls="menu-seluler"
-          >
-            <FontAwesomeIcon icon={menu ? faXmark : faBars} />
-          </button>
         </div>
 
-        {menu && (
-          <nav className="mobile-menu" id="menu-seluler" aria-label="Navigasi seluler">
-            {activeNavLinks.map((item, i) => (
-              <a href={item.href} key={item.href + i} onClick={() => setMenu(false)}>
-                {item.label}
+        {/* Mobile Nav Drawer */}
+        {mobileMenuOpen && (
+          <nav className="mobile-nav-drawer lg:hidden" aria-label="Navigasi Mobile">
+            <a href="#akomodasi" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+              Akomodasi
+            </a>
+            <a href="#aplikasi" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+              Fitur Aplikasi
+            </a>
+            <a href="#cara-kerja" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+              Cara Kerja
+            </a>
+            <a href="#statistik" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+              Statistik Platform
+            </a>
+            <a href="#kepercayaan" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+              Kepercayaan & Keamanan
+            </a>
+            <a href="#pemilik" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+              Untuk Pemilik Kost
+            </a>
+            <a href="#faq" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
+              Pertanyaan (FAQ)
+            </a>
+            <div className="pt-2">
+              <a
+                href={apk}
+                className="btn-primary w-full text-center"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleDownloadClick();
+                }}
+                download
+              >
+                <FontAwesomeIcon icon={faDownload} />
+                <span>Download APK ({appConfig.versionName || 'v1.3.0'})</span>
               </a>
-            ))}
-            <div className="mobile-menu__cta">
-              <Button
-                apk={apk}
-                label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
-                onDownloadClick={() => setShowModal(true)}
-              />
             </div>
           </nav>
         )}
       </header>
-      <main id="konten-utama">
-      {/* Scroll Progress Bar */}
-      <div
-        className="scroll-progress"
-        style={{ width: `${scrollProgress}%` }}
-        aria-hidden="true"
-      />
 
-      {/* Indikator sinkronisasi konten: titik + label untuk mata, live
-          region untuk pembaca layar. */}
-      <p className="sync-status" role="status" aria-live="polite">
-        <span className={`sync-dot sync-dot--${realtimeStatus === 'SUBSCRIBED' ? 'live' : 'idle'}`} aria-hidden="true" />
-        <span className="sr-only">
-          {realtimeStatus === 'SUBSCRIBED'
-            ? 'Pembaruan Landing Page otomatis aktif.'
-            : 'Pembaruan Landing Page otomatis tidak aktif; halaman diperbarui berkala.'}
-        </span>
-      </p>
-      <p className="sr-only" role="status" aria-live="polite">
-        {realtimeStatus === 'SUBSCRIBED'
-          ? 'Pembaruan Landing Page otomatis aktif.'
-          : 'Pembaruan Landing Page otomatis tidak aktif; halaman diperbarui berkala.'}
-      </p>
-
-      {/* Announcement Banner (Managed from Admin Dashboard) */}
-      {appConfig.bannerActive && !bannerDismissed && appConfig.bannerText && (
-        <div className={`announcement-banner announcement-banner--${appConfig.bannerType || 'promo'}`}>
-          <div className="shell announcement-inner" style={{ position: 'relative' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <FontAwesomeIcon icon={faBullhorn} />
-              {appConfig.bannerText}
-            </span>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-              {appConfig.bannerLink && (
-                <a href={appConfig.bannerLink} className="announcement-link">
-                  Lihat Detail <FontAwesomeIcon icon={faArrowRight} />
-                </a>
-              )}
-              <button
-                type="button"
-                onClick={() => setBannerDismissed(true)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  minWidth: 32,
-                  minHeight: 32,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 6,
-                  opacity: 0.85,
-                  fontSize: 15,
-                }}
-                aria-label="Tutup Pengumuman"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-      {/* Hero Section */}
-      <section id="beranda" className="hero">
-        <div className="hero__city" />
-        <div className="hero__overlay" />
-        <div className="shell hero__content">
-          <div className="hero__copy">
-            <p className="eyebrow eyebrow--light">{appConfig.appName.toUpperCase()} • {appConfig.targetCity.toUpperCase()}</p>
-            <h1>
-              {appConfig.heroHeadline || appConfig.tagline || `Temukan Kost Impianmu di ${appConfig.targetCity}`}
-            </h1>
-            <p className="hero__text">
-              {appConfig.heroSubheadline || appConfig.heroText}
-            </p>
-
-            <div className="hero__actions">
-              <Button
-                apk={apk}
-                label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
-                onDownloadClick={() => setShowModal(true)}
-              />
-              <a className="outline-button" href={appConfig.heroCtaSecondaryLink || '#fitur'}>
-                {appConfig.heroCtaSecondaryLabel || 'Lihat Fitur'} <FontAwesomeIcon icon={faArrowRight} />
-              </a>
-            </div>
-
-            {/* Informasi pendukung: versi, syarat perangkat, ukuran, dan
-                tautan panduan. Formatting diambil dari kelas supaya
-                tetap konsisten di semua lebar layar. */}
-            <div className="hero-spec">
-              <span>
-                <FontAwesomeIcon icon={faCube} />
-                {appConfig.versionName || 'v1.1.3'}
-              </span>
-              <i className="dot" aria-hidden="true" />
-              <span>
-                <FontAwesomeIcon icon={faAndroid} />
-                {appConfig.minAndroid || 'Android 8.0+'}
-              </span>
-              <i className="dot" aria-hidden="true" />
-              <span>
-                <FontAwesomeIcon icon={faBolt} />
-                {appConfig.apkSize || '3.3 MB'}
-              </span>
-              <i className="dot" aria-hidden="true" />
-              <span>
-                <FontAwesomeIcon icon={faCheck} />
-                {appConfig.heroAdFreeText || 'Bebas Iklan'}
-              </span>
-              {appConfig.securityModalActive && (
-                <>
-                  <i className="dot" aria-hidden="true" />
-                  <button type="button" onClick={() => setShowModal(true)}>
-                    Panduan Pasang APK
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Kartu melayang disembunyikan di layar kecil, jadi informasi
-                badge-nya ditampilkan sebagai baris statis agar tidak hilang.
-                Isinya sama dengan kartu melayang, bukan duplikat baris
-                spesifikasi di atasnya. */}
-            <div className="hero-badges-static">
-              <span>
-                <FontAwesomeIcon icon={faLocationDot} />
-                {appConfig.heroBadge1 || `Lokasi dekat kampus & area strategis ${appConfig.targetCity}`}
-              </span>
-              {appConfig.heroBadge2 && (
-                <span>
-                  <FontAwesomeIcon icon={faBuilding} />
-                  {appConfig.heroBadge2}
-                </span>
-              )}
-            </div>
-
-            <div className="trust-row">
-              <span>
+      {/* ------------------------------------------------------- Hero Section */}
+      <section className="hero-section">
+        <div className="shell">
+          <div className="hero-grid">
+            {/* Left Editorial Copy */}
+            <div>
+              <div className="eyebrow-badge">
                 <FontAwesomeIcon icon={faShieldHalved} />
-                {appConfig.heroTrustBadge1 || 'Mudah Digunakan'}
-              </span>
-              <span>
-                <FontAwesomeIcon icon={faCompass} />
-                {appConfig.heroTrustBadge2 || 'Data Terpercaya'}
-              </span>
-              <span>
-                <FontAwesomeIcon icon={faArrowsRotate} />
-                {appConfig.heroTrustBadge3 || 'Update Rutin'}
-              </span>
-            </div>
-          </div>
-
-          <div className="hero__visual">
-            <div className="soft-card soft-card--top">
-              <FontAwesomeIcon icon={faLocationDot} style={{ marginRight: 6 }} />
-              {appConfig.heroBadge1 || `Lokasi dekat kampus & area strategis ${appConfig.targetCity}`}
-            </div>
-
-            {/* 3D Smartphone with App UI Inside Screen */}
-            <div className="hero-3d-phone">
-              <img
-                src={
-                  appConfig.heroImageUrl && !heroMockupFailed
-                    ? withRevision(appConfig.heroImageUrl, settingsRevision)
-                    : phoneFilter === 'Putri'
-                    ? '/mockup-hero-putri.webp'
-                    : phoneFilter === 'Putra'
-                    ? '/mockup-hero-putra.webp'
-                    : phoneFilter === 'Campur'
-                    ? '/mockup-hero-campur.webp'
-                    : '/mockup-hero-semua.webp'
-                }
-                alt={`Tampilan aplikasi ${appConfig.appName} di layar smartphone`}
-                className="hero-3d-img"
-                onError={() => setHeroMockupFailed(true)}
-              />
-            </div>
-
-            {/* Interactive Filter Pills Floating in Hero (Active when using default mockup) */}
-            {(!appConfig.heroImageUrl || heroMockupFailed) && (
-              <div className="hero-filter-selector" role="group" aria-labelledby="hero-filter-label">
-                <span className="hero-filter-label" id="hero-filter-label">Kategori:</span>
-                {(['Semua', 'Putri', 'Putra', 'Campur'] as const).map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setPhoneFilter(key)}
-                    className={`hero-filter-chip ${phoneFilter === key ? 'active' : ''}`}
-                    aria-pressed={phoneFilter === key}
-                  >
-                    {key}
-                  </button>
-                ))}
+                <span>Properti Kost Terverifikasi di Pekanbaru</span>
               </div>
-            )}
 
-            <div className="soft-card soft-card--bottom">
-              <FontAwesomeIcon icon={faHeart} style={{ marginRight: 6 }} />
-              {appConfig.heroBadge2 || 'Detail kost & foto kamar lengkap'}
-            </div>
-          </div>
-        </div>
-      </section>
+              <h1 className="hero-title">
+                {appConfig.heroHeadline && appConfig.heroHeadline !== 'Temukan Kost Nyaman & Terpercaya di Pekanbaru'
+                  ? appConfig.heroHeadline
+                  : 'Temukan Tempat Tinggal yang Terasa Seperti Rumah.'}
+              </h1>
 
-      {/* Dynamic Promotional Ads & Campaigns (Managed from Admin Dashboard) */}
-      {promoAds.length > 0 && (
-        <section className="promo-section reveal-on-scroll" aria-labelledby="promo-judul">
-          <div className="shell">
-            <p className="eyebrow">PROMOSI &amp; EVENT KHUSUS</p>
-            <h2 id="promo-judul" className="promo-title">Penawaran Latest</h2>
-            <div style={{ display: 'grid', gap: 16, marginTop: 20 }}>
-              {promoAds.map((ad) => (
-                <div key={ad.id} className="promo-banner-card">
-                  <div className="promo-banner-content">
-                    <h3 style={{ fontSize: 20, fontWeight: 700, margin: '6px 0 8px' }}>{ad.title}</h3>
-                    {ad.description && <p style={{ fontSize: 13, color: '#655955', margin: 0, lineHeight: 1.6 }}>{ad.description}</p>}
-                    {(ad.target_url || ad.link) && (
-                      <div style={{ marginTop: 14 }}>
-                        <a
-                          href={ad.target_url || ad.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="download"
-                          style={{ minHeight: 44, padding: '0 18px', fontSize: 13 }}
-                        >
-                          Kunjungi Penawaran <FontAwesomeIcon icon={faArrowRight} />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                  {(ad.image_url || ad.image) && (
-                    <img
-                      src={withRevision((ad.image_url || ad.image) as string, settingsRevision)}
-                      alt=""
-                      className="promo-banner-img"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Trust Section with Scroll Animation */}
-      <section className="section prerelease reveal-on-scroll">
-        <div className="shell">
-          <p className="eyebrow">UNDUH RESMI</p>
-          <h2>Mengapa mengunduh {appConfig.appName} langsung dari sini?</h2>
-          <p className="intro">Kenali manfaat dan jaminan keamanan sebelum memasang aplikasi di ponselmu.</p>
-
-          <div className="trust-grid">
-            {activeTrust.length === 0 && (
-              <p className="empty-state">Belum ada poin kepercayaan yang ditampilkan.</p>
-            )}
-            {activeTrust.map((item) => (
-              <article className="trust-card reveal-on-scroll" key={item.title}>
-                <span className="icon-badge">
-                  <FontAwesomeIcon icon={item.icon} />
-                </span>
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.desc}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section with Scroll Animation */}
-      <section id="fitur" className="section section--cream reveal-on-scroll">
-        <div className="shell">
-          <p className="eyebrow">FITUR APLIKASI</p>
-          <h2>Fitur yang Kami Bangun untuk Memudahkan Anda</h2>
-          <p className="intro">Pengalaman mencari kost di {appConfig.targetCity} yang sederhana, lengkap, dan mudah diandalkan.</p>
-
-          <div className="feature-grid">
-            {activeFeatures.length === 0 && (
-              <p className="empty-state">Belum ada fitur yang ditampilkan.</p>
-            )}
-            {activeFeatures.map((item) => (
-              <article className="feature-card reveal-on-scroll" key={item.title}>
-                <span className="icon-badge">
-                  <FontAwesomeIcon icon={item.icon} />
-                </span>
-                <h3>{item.title}</h3>
-                <p>{item.desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Install Guide Section with Scroll Animation */}
-      <section id="install" className="section install-section reveal-on-scroll">
-        <div className="shell install-layout">
-          {/* 3D Smartphone Mockup */}
-          <div className="install-mockup-wrap">
-            <div className="install-3d-phone">
-              <img
-                src={
-                  installMockupFailed
-                    ? '/mockup-install-1.webp'
-                    : `/mockup-install-${activeInstallStep + 1}.webp`
-                }
-                alt={`Simulasi langkah ${activeInstallStep + 1}: ${
-                  (activeInstallSteps[activeInstallStep]?.t) || 'Langkah Instalasi'
-                }`}
-                className="install-3d-img"
-                onError={() => setInstallMockupFailed(true)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <p className="eyebrow">CARA INSTALL</p>
-            <h2>Mudah Instal, Langsung Pakai</h2>
-            <p className="intro">
-              Ikuti langkah berikut untuk menginstal aplikasi {appConfig.appName} di perangkat Android kamu ({appConfig.minAndroid}). Klik tiap langkah untuk melihat simulasi layar di samping.
-            </p>
-
-            <div className="steps">
-              {activeInstallSteps.map((stepItem, idx) => (
-                <button
-                  type="button"
-                  className={`step install-step-card ${activeInstallStep === idx ? 'active' : ''} ${completedInstallSteps.includes(idx) ? 'is-complete' : ''}`}
-                  key={stepItem.n + idx}
-                  onClick={() => handleInstallStepClick(idx)}
-                  disabled={completedInstallSteps.includes(idx)}
-                  aria-pressed={activeInstallStep === idx}
-                  aria-current={activeInstallStep === idx ? 'step' : undefined}
-                  aria-label={`${stepItem.t}${completedInstallSteps.includes(idx) ? ' (sudah dipilih)' : ''}`}
-                >
-                  <span>{stepItem.n}</span>
-                  <div>
-                    <h3>{stepItem.t}</h3>
-                    <p>{stepItem.d}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {appConfig.releaseNotes && (
-              <p style={{ margin: '14px 0 0', color: 'var(--muted, #655955)', fontSize: 13, lineHeight: 1.6 }}>
-                {appConfig.releaseNotes}
+              <p className="hero-subtitle">
+                {appConfig.heroSubheadline && !appConfig.heroSubheadline.startsWith('CariKostKita hadir')
+                  ? appConfig.heroSubheadline
+                  : 'Jelajahi berbagai pilihan kost di Pekanbaru dengan informasi lengkap, lokasi jelas, dan kemudahan menemukan tempat tinggal yang tepat.'}
               </p>
-            )}
 
-            <div className="install-actions">
-              <Button
-                apk={apk}
-                label={appConfig.heroCtaPrimaryLabel || 'Download APK'}
-                onDownloadClick={() => setShowModal(true)}
-              />
-              {appConfig.securityModalActive && (
+              {/* CTAs */}
+              <div className="hero-actions">
+                <a
+                  href={apk}
+                  className="btn-primary"
+                  onClick={handleDownloadClick}
+                  download
+                >
+                  <FontAwesomeIcon icon={faDownload} />
+                  <span>Download Aplikasi APK</span>
+                </a>
+
+                <a href="#akomodasi" className="btn-secondary">
+                  <span>Jelajahi Kost</span>
+                  <FontAwesomeIcon icon={faArrowRight} />
+                </a>
+              </div>
+
+              {/* Specs Meta */}
+              <div className="hero-meta">
+                <span className="hero-meta-item">
+                  <FontAwesomeIcon icon={faAndroid} className="text-[#134E39]" />
+                  <span>Versi {appConfig.versionName || 'v1.3.0'}</span>
+                </span>
+                <span className="hero-meta-dot" />
+                <span className="hero-meta-item">{appConfig.apkSize || '3.5 MB'}</span>
+                <span className="hero-meta-dot" />
+                <span className="hero-meta-item">{appConfig.minAndroid || 'Android 8.0+'}</span>
+                <span className="hero-meta-dot" />
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--maroon)', fontWeight: 700, fontSize: 12, textDecoration: 'underline' }}
+                  className="text-[#134E39] font-bold underline cursor-pointer hover:text-[#0E3B2B]"
                 >
-                  Lihat Panduan Dialog Keamanan Android <FontAwesomeIcon icon={faArrowRight} />
+                  Panduan Pasang APK
                 </button>
-              )}
+              </div>
+
+              {/* Area Quick Tags */}
+              <div className="hero-tags">
+                <span className="hero-tags-label">Area Kampus:</span>
+                {[
+                  'UNRI Panam',
+                  'UIR Marpoyan',
+                  'UIN Suska',
+                  'Sukajadi',
+                  'Payung Sekaki',
+                ].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className="hero-tag-pill"
+                    onClick={() => {
+                      const el = document.getElementById('akomodasi');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Visual Phone Mockup Composition */}
+            <div className="hero-visual-wrap">
+              <div className="hero-visual-canvas">
+                {/* Layered Floating Card 1 */}
+                <div className="hero-floating-card hero-floating-card--top">
+                  <div className="floating-card-icon">
+                    <FontAwesomeIcon icon={faWhatsapp} className="text-[#25D366]" />
+                  </div>
+                  <div>
+                    <h3 className="floating-card-title">Kontak Langsung</h3>
+                    <p className="floating-card-subtitle">WhatsApp pemilik tanpa calo</p>
+                  </div>
+                </div>
+
+                {/* Smartphone Phone Frame */}
+                <div className="hero-phone-frame">
+                  <Image
+                    src="/mockup-hero-semua.webp"
+                    alt="Pratinjau Aplikasi CariKostKita"
+                    width={270}
+                    height={550}
+                    priority
+                    unoptimized
+                  />
+                </div>
+
+                {/* Layered Floating Card 2 */}
+                <div className="hero-floating-card hero-floating-card--bottom">
+                  <div className="floating-card-icon">
+                    <FontAwesomeIcon icon={faBolt} className="text-[#C58B39]" />
+                  </div>
+                  <div>
+                    <h3 className="floating-card-title">Listrik Transparan</h3>
+                    <p className="floating-card-subtitle">All-in atau token 900W</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* For Boarding House Owners with Scroll Animation */}
-      <section id="pemilik" className="section owner-section reveal-on-scroll">
-        <div className="shell owner-layout">
-          <div>
-            <p className="eyebrow">KHUSUS PEMILIK KOST</p>
-            <h2>{appConfig.ownerTitle || `Anda punya kost di ${appConfig.targetCity}?`}</h2>
-            <p className="intro">
-              {appConfig.ownerIntro || `Daftarkan kost Anda di ${appConfig.appName} agar lebih mudah ditemukan calon penyewa mahasiswa dan pekerja di ${appConfig.targetCity} tanpa komisi perantara.`}
+      {/* --------------------------------------- Featured Accommodations Section */}
+      <section id="akomodasi" className="section section--white">
+        <div className="shell">
+          <div className="section-header">
+            <div className="eyebrow-badge">
+              <FontAwesomeIcon icon={faBuilding} />
+              <span>Pilihan Akomodasi</span>
+            </div>
+            <h2 className="section-title">Koleksi Kost Unggulan di Pekanbaru</h2>
+            <p className="section-description">
+              Data akomodasi riil dari sistem CariKostKita: informasi harga transparan, kelengkapan fasilitas kamar, dan dokumentasi foto riil.
             </p>
-            <div style={{ marginTop: 28, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <a
-                className="download"
-                style={{ background: '#25D366' }}
-                href={waOwnerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+          </div>
+
+          {/* Filter Bar */}
+          <div className="accommodations-filter-bar">
+            <div className="filter-tabs">
+              {(
+                [
+                  { key: 'ALL', label: 'Semua Kost' },
+                  { key: 'PUTRA', label: 'Kost Putra' },
+                  { key: 'PUTRI', label: 'Kost Putri' },
+                  { key: 'CAMPUR', label: 'Kost Campur' },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={`filter-tab ${activeFilter === tab.key ? 'active' : ''}`}
+                  onClick={() => setActiveFilter(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="text-sm font-semibold text-[#74827C]">
+              Menampilkan {kosts.length} listing terverifikasi
+            </div>
+          </div>
+
+          {/* Listings Grid */}
+          {loadingKosts ? (
+            <div className="kost-grid">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="kost-card animate-pulse">
+                  <div className="kost-card-image-wrap bg-[#E8ECE9]" />
+                  <div className="kost-card-body">
+                    <div className="h-4 bg-[#E8ECE9] rounded w-1/3 mb-3" />
+                    <div className="h-6 bg-[#E8ECE9] rounded w-4/5 mb-4" />
+                    <div className="flex gap-2 mb-4">
+                      <div className="h-5 bg-[#E8ECE9] rounded w-16" />
+                      <div className="h-5 bg-[#E8ECE9] rounded w-20" />
+                    </div>
+                    <div className="h-6 bg-[#E8ECE9] rounded w-1/2 mt-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : kosts.length > 0 ? (
+            <div className="kost-grid">
+              {kosts.map((item, idx) => {
+                const title = item.name || item.nama_kost || 'Hunian Kost Pekanbaru';
+                const district = item.district || item.kecamatan || 'Pekanbaru';
+                const gender = (item.tipe_kost || item.gender_type || 'CAMPUR').toUpperCase();
+                const priceVal = item.price || item.harga || item.price_min || 0;
+                const facilities =
+                  item.top_facilities && item.top_facilities.length > 0
+                    ? item.top_facilities
+                    : Array.isArray(item.facilities)
+                    ? item.facilities.slice(0, 3)
+                    : ['Kamar Mandi Dalam', 'Parkir Motor'];
+                const photoSrc =
+                  item.thumbnail_url && item.thumbnail_url.trim() !== ''
+                    ? item.thumbnail_url
+                    : localRoomImages[idx % localRoomImages.length];
+
+                return (
+                  <article key={item.id} className="kost-card">
+                    {/* Thumbnail Image */}
+                    <div className="kost-card-image-wrap">
+                      <Image
+                        src={photoSrc}
+                        alt={`Foto kamar ${title}`}
+                        width={400}
+                        height={250}
+                        className="kost-card-img"
+                        unoptimized
+                      />
+
+                      {/* Top Badges */}
+                      <div className="kost-card-badges">
+                        <span
+                          className={`badge-gender ${
+                            gender === 'PUTRI'
+                              ? 'badge-gender--putri'
+                              : gender === 'PUTRA'
+                              ? 'badge-gender--putra'
+                              : 'badge-gender--campur'
+                          }`}
+                        >
+                          {gender === 'PUTRI' ? 'Putri' : gender === 'PUTRA' ? 'Putra' : 'Campur'}
+                        </span>
+
+                        <span className="badge-verified">
+                          <FontAwesomeIcon icon={faShieldHalved} />
+                          <span>Terverifikasi</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="kost-card-body">
+                      <div className="kost-card-location">
+                        <FontAwesomeIcon icon={faLocationDot} />
+                        <span>Kec. {district}, Pekanbaru</span>
+                      </div>
+
+                      <h3 className="kost-card-title" title={title}>
+                        {title}
+                      </h3>
+
+                      {/* Facility Pills */}
+                      <div className="kost-card-facilities">
+                        {facilities.map((fac: string, fIdx: number) => (
+                          <span key={fIdx} className="kost-card-facility-pill">
+                            {fac}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Footer & Price */}
+                      <div className="kost-card-footer">
+                        <div>
+                          <div className="kost-card-price-label">Mulai dari</div>
+                          <div className="kost-card-price-val">
+                            {formatPrice(priceVal)}
+                            <span className="kost-card-price-unit"> / bln</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="kost-card-action-btn"
+                          onClick={() => setShowModal(true)}
+                        >
+                          Detail di App
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-[#F6F6F2] rounded-2xl border border-[#E8ECE9]">
+              <div className="w-12 h-12 rounded-full bg-[#E8ECE9] flex items-center justify-center mx-auto mb-4 text-[#74827C]">
+                <FontAwesomeIcon icon={faSearch} />
+              </div>
+              <h3 className="text-lg font-bold text-[#111815] mb-1">
+                Tidak ada kost ditemukan untuk kategori ini
+              </h3>
+              <p className="text-sm text-[#74827C] mb-4">
+                Silakan pilih kategori lain atau telusuri seluruh koleksi kost kami.
+              </p>
+              <button
+                type="button"
+                className="btn-secondary text-sm"
+                onClick={() => setActiveFilter('ALL')}
               >
-                <FontAwesomeIcon icon={faWhatsapp} />
-                <span>{appConfig.ownerWaLabel || 'Daftar via WhatsApp'}</span>
-              </a>
-              <Button
-                apk={apk}
-                light
-                label={appConfig.ownerSecondaryLabel || 'Download Aplikasi'}
-                onDownloadClick={() => setShowModal(true)}
+                Tampilkan Semua Kost
+              </button>
+            </div>
+          )}
+
+          {/* Bottom Callout */}
+          <div className="mt-12 p-8 bg-[#F0F6F3] border border-[#D1E3DA] rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-lg font-bold text-[#134E39] mb-1">
+                Ingin melihat 1.160+ pilihan kost lainnya di seluruh area Pekanbaru?
+              </h3>
+              <p className="text-sm text-[#48544F]">
+                Download aplikasi Android CariKostKita untuk filter radius kampus, ketersediaan kamar real-time, dan kontak langsung ke pemilik.
+              </p>
+            </div>
+            <a
+              href={apk}
+              className="btn-primary whitespace-nowrap"
+              onClick={handleDownloadClick}
+              download
+            >
+              <FontAwesomeIcon icon={faDownload} />
+              <span>Download Aplikasi Lengkap</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------ Application Showcase Section */}
+      <section id="aplikasi" className="section section--subtle">
+        <div className="shell">
+          <div className="section-header">
+            <div className="eyebrow-badge">
+              <FontAwesomeIcon icon={faCompass} />
+              <span>Teknologi Pencarian</span>
+            </div>
+            <h2 className="section-title">Dirancang Khusus untuk Kemudahan Pencari Kost</h2>
+            <p className="section-description">
+              Dari pencarian berbasis radius kampus hingga pencocokan teman sekamar, semua fitur kami bangun demi pengalaman mencari hunian yang nyaman.
+            </p>
+          </div>
+
+          <div className="app-showcase-grid">
+            {/* Interactive Feature List */}
+            <div className="app-feature-list">
+              {showcaseFeatures.map((feat, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`app-feature-card ${selectedShowcaseIndex === idx ? 'active' : ''}`}
+                  onClick={() => setSelectedShowcaseIndex(idx)}
+                >
+                  <div className="app-feature-icon">
+                    <FontAwesomeIcon icon={feat.icon} />
+                  </div>
+                  <div>
+                    <h3 className="app-feature-title">{feat.title}</h3>
+                    <p className="app-feature-desc">{feat.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Showcase Phone Screen Preview */}
+            <div className="app-showcase-phone-frame">
+              <Image
+                src={showcaseFeatures[selectedShowcaseIndex].mockup}
+                alt={showcaseFeatures[selectedShowcaseIndex].title}
+                width={290}
+                height={590}
+                className="transition-all duration-300"
+                unoptimized
               />
             </div>
           </div>
-
-          <ol>
-            {activeOwnerSteps.length === 0 && (
-              <li className="empty-state" style={{ display: 'block' }}>
-                Belum ada langkah pendaftaran yang ditampilkan.
-              </li>
-            )}
-            {activeOwnerSteps.map((x, i) => (
-              <li key={i}>
-                <span>{i + 1}</span>
-                {x}
-              </li>
-            ))}
-          </ol>
         </div>
       </section>
 
-      {/* About & FAQ with Scroll Animation */}
-      <section id="tentang" className="section about-section reveal-on-scroll">
-        <div className="shell about-layout">
-          <div className="about-card">
-            <div className="avatar">
-              <FontAwesomeIcon icon={faUsers} />
+      {/* ------------------------------------------------ How It Works Section */}
+      <section id="cara-kerja" className="section section--white">
+        <div className="shell">
+          <div className="section-header section-header--center">
+            <div className="eyebrow-badge">
+              <FontAwesomeIcon icon={faFileLines} />
+              <span>Panduan Praktis</span>
             </div>
-            <div>
-              <p className="eyebrow">TENTANG KAMI</p>
-              <h2>{appConfig.aboutTitle || `Dibangun untuk Kebutuhan Pencari Kost ${appConfig.targetCity}`}</h2>
-              <p>
-                {appConfig.aboutStory || `${appConfig.appName} adalah aplikasi yang dikembangkan untuk membantu masyarakat, terutama anak rantau dan mahasiswa, dalam mencari kost di ${appConfig.targetCity} dengan lebih mudah, cepat, dan terpercaya.`}
-              </p>
+            <h2 className="section-title">Tiga Langkah Mudah Menemukan Kost Idaman</h2>
+            <p className="section-description">
+              Proses pencarian hunian dibuat transparan, cepat, dan tanpa hambatan birokrasi.
+            </p>
+          </div>
 
-              {/* Dynamic Company/Contact Info */}
-              <div style={{ marginTop: 16, fontSize: 14, display: 'flex', flexDirection: 'column', gap: 10, color: 'var(--muted)' }}>
-                {appConfig.address && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faMapPin} style={{ color: 'var(--maroon)', fontSize: 15 }} />
-                    <span>{appConfig.address}</span>
-                  </div>
-                )}
-                {appConfig.contactPhone && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faPhone} style={{ color: 'var(--maroon)', fontSize: 15 }} />
-                    <span>{appConfig.contactPhone}</span>
-                  </div>
-                )}
-                {appConfig.supportEmail && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FontAwesomeIcon icon={faEnvelope} style={{ color: 'var(--maroon)', fontSize: 15 }} />
-                    <span>{appConfig.supportEmail}</span>
-                  </div>
-                )}
+          <div className="how-it-works-grid">
+            {/* Step 1 */}
+            <div className="step-card">
+              <div className="step-num">01</div>
+              <div className="step-icon-wrap">
+                <FontAwesomeIcon icon={faSearch} />
+              </div>
+              <h3 className="step-title">Temukan Kost</h3>
+              <p className="step-text">
+                Telusuri ribuan pilihan kost di Pekanbaru berdasarkan radius kampus, jenis hunian (putra/putri/campur), dan rentang budget Anda.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="step-card">
+              <div className="step-num">02</div>
+              <div className="step-icon-wrap">
+                <FontAwesomeIcon icon={faFileLines} />
+              </div>
+              <h3 className="step-title">Lihat Detail</h3>
+              <p className="step-text">
+                Pelajari foto kamar resolusi tinggi, spesifikasi luas, fasilitas lengkap, kebijakan listrik (token mandiri/all-in), dan kamar yang tersedia.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="step-card">
+              <div className="step-num">03</div>
+              <div className="step-icon-wrap">
+                <FontAwesomeIcon icon={faWhatsapp} />
+              </div>
+              <h3 className="step-title">Hubungi Pemilik</h3>
+              <p className="step-text">
+                Hubungi pemilik properti secara langsung melalui tautan WhatsApp resmi untuk janji temu survei lokasi atau booking tanpa perantara calo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------------------------------- Platform Statistics Section */}
+      <section id="statistik" className="section section--subtle">
+        <div className="shell">
+          <div className="section-header section-header--center">
+            <div className="eyebrow-badge">
+              <FontAwesomeIcon icon={faStar} />
+              <span>Statistik Platform</span>
+            </div>
+            <h2 className="section-title">Data Riil Komunitas CariKostKita</h2>
+            <p className="section-description">
+              Angka yang mencerminkan pertumbuhan ekosistem akomodasi kost di Kota Pekanbaru.
+            </p>
+          </div>
+
+          <div className="stats-strip">
+            <div className="stat-item">
+              <div className="stat-val">1.160+</div>
+              <h3 className="stat-label">Kost Terdaftar</h3>
+              <p className="stat-sub">Listing aktif yang telah diverifikasi</p>
+            </div>
+
+            <div className="stat-item">
+              <div className="stat-val">10+</div>
+              <h3 className="stat-label">Kecamatan Pekanbaru</h3>
+              <p className="stat-sub">Menjangkau Panam, Marpoyan, Sukajadi, dll.</p>
+            </div>
+
+            <div className="stat-item">
+              <div className="stat-val">100%</div>
+              <h3 className="stat-label">Bebas Biaya Calo</h3>
+              <p className="stat-sub">Kontak langsung ke pemilik tanpa mark-up sewa</p>
+            </div>
+
+            <div className="stat-item">
+              <div className="stat-val">&lt; 24 Jam</div>
+              <h3 className="stat-label">Moderasi Cepat</h3>
+              <p className="stat-sub">Pemeriksaan kualitas pendaftaran unit baru</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------- Trust & Credibility Section */}
+      <section id="kepercayaan" className="section section--white">
+        <div className="shell">
+          <div className="section-header">
+            <div className="eyebrow-badge">
+              <FontAwesomeIcon icon={faShieldHalved} />
+              <span>Kepercayaan & Keamanan</span>
+            </div>
+            <h2 className="section-title">Komitmen Kami untuk Transparansi & Keamanan Anda</h2>
+            <p className="section-description">
+              CariKostKita dibangun atas prinsip keterbukaan informasi bagi mahasiswa, perantau, dan pemilik properti di Pekanbaru.
+            </p>
+          </div>
+
+          <div className="trust-grid-4">
+            <div className="trust-item-card">
+              <div className="trust-item-icon">
+                <FontAwesomeIcon icon={faShieldHalved} />
+              </div>
+              <h3 className="trust-item-title">Kurasi Lapangan Berkala</h3>
+              <p className="trust-item-desc">
+                Setiap data listing kost ditinjau oleh tim moderator untuk memastikan lokasi dan foto sesuai kondisi fisik sesungguhnya.
+              </p>
+            </div>
+
+            <div className="trust-item-card">
+              <div className="trust-item-icon">
+                <FontAwesomeIcon icon={faBolt} />
+              </div>
+              <h3 className="trust-item-title">Transparansi Biaya & Listrik</h3>
+              <p className="trust-item-desc">
+                Informasi fasilitas dan rincian biaya (apakah listrik token mandiri atau all-in) dicantumkan jelas tanpa biaya tersembunyi.
+              </p>
+            </div>
+
+            <div className="trust-item-card">
+              <div className="trust-item-icon">
+                <FontAwesomeIcon icon={faWhatsapp} />
+              </div>
+              <h3 className="trust-item-title">Komunikasi Langsung Pemilik</h3>
+              <p className="trust-item-desc">
+                Pengguna terhubung langsung dengan nomor WhatsApp pemilik sah tanpa perantara dan tanpa potongan komisi sewa.
+              </p>
+            </div>
+
+            <div className="trust-item-card">
+              <div className="trust-item-icon">
+                <FontAwesomeIcon icon={faLock} />
+              </div>
+              <h3 className="trust-item-title">Privasi & Bebas Iklan Invasif</h3>
+              <p className="trust-item-desc">
+                Platform bersih tanpa iklan pop-up yang mengganggu kenyamanan bernavigasi dan data kontak pengguna terlindungi.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ----------------------------------------- For Kost Owners Section */}
+      <section id="pemilik" className="section section--white pt-0">
+        <div className="shell">
+          <div className="owner-card-hero">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wider mb-4 border border-white/20">
+                <FontAwesomeIcon icon={faBuilding} />
+                <span>Untuk Pemilik Properti di Pekanbaru</span>
+              </div>
+              <h2 className="owner-title">Punya Kamar Kost Kosong? Promosikan Gratis di CariKostKita</h2>
+              <p className="owner-desc">
+                Jangkau ribuan mahasiswa UNRI, UIR, UIN Suska serta pekerja muda Pekanbaru setiap hari tanpa potongan komisi perantara sepeser pun.
+              </p>
+              <a
+                href={waOwnerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-white"
+              >
+                <FontAwesomeIcon icon={faWhatsapp} className="text-[#25D366]" />
+                <span>Daftarkan Kost via WhatsApp</span>
+              </a>
+            </div>
+
+            <div className="owner-benefits">
+              <div className="owner-benefit-item">
+                <FontAwesomeIcon icon={faCheck} />
+                <div>
+                  <strong className="block text-white">0% Komisi & Biaya Tersembunyi</strong>
+                  <span>Uang sewa 100% langsung masuk ke rekening pemilik tanpa potongan komisi aplikasi.</span>
+                </div>
               </div>
 
-              <div className="social-links" style={{ marginTop: 16, flexWrap: 'wrap', gap: 14 }}>
-                <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" aria-label="GitHub" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <FontAwesomeIcon icon={faGithub} /> GitHub
+              <div className="owner-benefit-item">
+                <FontAwesomeIcon icon={faCheck} />
+                <div>
+                  <strong className="block text-white">Calon Penyewa Terarah</strong>
+                  <span>Pencari kost yang menghubungi Anda adalah peminat serius yang telah melihat foto dan detail kamar.</span>
+                </div>
+              </div>
+
+              <div className="owner-benefit-item">
+                <FontAwesomeIcon icon={faCheck} />
+                <div>
+                  <strong className="block text-white">Bantuan Kurasi 1x24 Jam</strong>
+                  <span>Kirimkan detail dan foto kamar Anda melalui WhatsApp, tim kurator kami bantu tayangkan dengan cepat.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------- FAQ Accordion Section */}
+      <section id="faq" className="section section--subtle">
+        <div className="shell">
+          <div className="section-header section-header--center">
+            <div className="eyebrow-badge">
+              <FontAwesomeIcon icon={faFileLines} />
+              <span>Pertanyaan Umum</span>
+            </div>
+            <h2 className="section-title">Hal yang Sering Ditanyakan</h2>
+            <p className="section-description">
+              Informasi lengkap seputar instalasi APK, pencarian kamar, dan keamanan transaksi.
+            </p>
+          </div>
+
+          <div className="faq-grid">
+            {[
+              {
+                q: 'Apakah aplikasi CariKostKita gratis untuk digunakan?',
+                a: 'Ya, 100% gratis. Anda dapat menelusuri seluruh data kost, memeriksa fasilitas, melihat foto kamar, hingga menghubungi pemilik langsung melalui WhatsApp tanpa dipungut biaya apapun.',
+              },
+              {
+                q: 'Bagaimana cara memasang aplikasi APK di HP Android saya?',
+                a: 'Klik tombol "Download APK", buka berkas APK yang sudah diunduh, lalu pilih "Pasang". Jika peramban Chrome menampilkan pemberitahuan unduhan dari sumber luar Play Store, pilih "Tetap Unduh / Izinkan dari Sumber Ini". Berkas APK kami 100% aman dan bebas malware.',
+              },
+              {
+                q: 'Mengapa tidak ada biaya tambahan atau calo di CariKostKita?',
+                a: 'Tujuan utama kami adalah menghubungkan pencari hunian dan pemilik secara langsung demi transparansi harga. Kami tidak memotong komisi dari uang sewa kamar.',
+              },
+              {
+                q: 'Bagaimana cara melaporkan informasi kost yang sudah penuh atau tidak akurat?',
+                a: 'Anda dapat menekan tombol bantuan WhatsApp di pojok kanan bawah atau melaporkan langsung melalui menu bantuan di dalam aplikasi Android CariKostKita.',
+              },
+              {
+                q: 'Bagaimana cara kerja fitur Roommate Matchmaker di aplikasi?',
+                a: 'Di versi 1.3.0 terbaru, Anda dapat memfilter calon teman sekamar berdasarkan kampus (UNRI, UIR, UIN), jenis kelamin, jurusan, serta kisaran budget bulanan yang disepakati bersama.',
+              },
+            ].map((faq, idx) => {
+              const isOpen = openFaq === idx;
+              return (
+                <div key={idx} className="faq-card">
+                  <button
+                    type="button"
+                    className="faq-trigger"
+                    onClick={() => setOpenFaq(isOpen ? null : idx)}
+                    aria-expanded={isOpen}
+                  >
+                    <span>{faq.q}</span>
+                    <FontAwesomeIcon icon={isOpen ? faChevronUp : faChevronDown} />
+                  </button>
+                  {isOpen && <div className="faq-answer">{faq.a}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------------------------------------------- Download CTA Section */}
+      <section className="download-section">
+        <div className="shell">
+          <div className="download-box">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wider mb-4 border border-white/20">
+                <FontAwesomeIcon icon={faAndroid} />
+                <span>Rilis Resmi Android v1.3.0</span>
+              </div>
+
+              <h2 className="download-headline">
+                Mulai Temukan Kost Terbaik Anda di Pekanbaru Hari Ini
+              </h2>
+
+              <p className="download-text">
+                Unduh aplikasi CariKostKita sekarang. Ringan ({appConfig.apkSize || '3.5 MB'}), cepat, dan 100% bebas biaya calo. Dapatkan akses ke ribuan data akomodasi terverifikasi di seluruh Pekanbaru.
+              </p>
+
+              <div className="download-actions-group">
+                <a
+                  href={apk}
+                  className="btn-white"
+                  onClick={handleDownloadClick}
+                  download
+                >
+                  <FontAwesomeIcon icon={faDownload} />
+                  <span>Download APK ({appConfig.versionName || 'v1.3.0'})</span>
                 </a>
-                <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1ebe5d' }}>
-                  <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
-                </a>
+
+                <button
+                  type="button"
+                  className="btn-secondary !bg-white/10 !text-white !border-white/30 hover:!bg-white/20"
+                  onClick={() => setShowModal(true)}
+                >
+                  Panduan Pasang APK
+                </button>
+              </div>
+
+              <div className="download-spec-pill">
+                <span>Ukuran: {appConfig.apkSize || '3.5 MB'}</span>
+                <span>•</span>
+                <span>OS: {appConfig.minAndroid || 'Android 8.0+'}</span>
+                <span>•</span>
+                <span>Terverifikasi Bebas Virus & Calo</span>
+              </div>
+            </div>
+
+            <div className="download-phone-preview">
+              <Image
+                src="/mockup-hero-semua.webp"
+                alt="Aplikasi CariKostKita Android"
+                width={250}
+                height={500}
+                unoptimized
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------- Footer */}
+      <footer className="site-footer">
+        <div className="shell">
+          <div className="footer-main-grid">
+            {/* Col 1: Brand Info */}
+            <div className="footer-col-brand">
+              <a href="#" className="brand">
+                <div className="brand__mark">
+                  <FontAwesomeIcon icon={faBuilding} />
+                </div>
+                <div className="brand__text">
+                  <span>{appConfig.appName || 'CariKostKita'}</span>
+                </div>
+              </a>
+              <p>
+                Platform pencarian hunian kost modern di Kota Pekanbaru dengan foto asli, transparansi biaya listrik, dan kontak langsung ke pemilik.
+              </p>
+              <div className="footer-social-row">
                 {appConfig.instagram && (
-                  <a href={appConfig.instagram} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#E1306C' }}>
-                    <FontAwesomeIcon icon={faInstagram} /> Instagram
+                  <a
+                    href={appConfig.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="footer-social-icon"
+                    aria-label="Instagram CariKostKita"
+                  >
+                    <FontAwesomeIcon icon={faInstagram} />
                   </a>
                 )}
                 {appConfig.facebook && (
-                  <a href={appConfig.facebook} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#1877F2' }}>
-                    <FontAwesomeIcon icon={faFacebook} /> Facebook
+                  <a
+                    href={appConfig.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="footer-social-icon"
+                    aria-label="Facebook CariKostKita"
+                  >
+                    <FontAwesomeIcon icon={faFacebook} />
                   </a>
                 )}
                 {appConfig.tiktok && (
-                  <a href={appConfig.tiktok} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <FontAwesomeIcon icon={faTiktok} /> TikTok
+                  <a
+                    href={appConfig.tiktok}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="footer-social-icon"
+                    aria-label="TikTok CariKostKita"
+                  >
+                    <FontAwesomeIcon icon={faTiktok} />
                   </a>
                 )}
-                {appConfig.youtube && (
-                  <a href={appConfig.youtube} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#FF0000' }}>
-                    <FontAwesomeIcon icon={faYoutube} /> YouTube
-                  </a>
-                )}
-                {appConfig.linkedin && (
-                  <a href={appConfig.linkedin} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0A66C2' }}>
-                    <FontAwesomeIcon icon={faLinkedin} /> LinkedIn
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div id="faq" className="faq">
-            <p className="eyebrow">FAQ</p>
-            <h2>Pertanyaan yang Sering Diajukan</h2>
-            {activeFaqs.length === 0 && (
-              <p className="empty-state">Belum ada pertanyaan yang ditampilkan.</p>
-            )}
-            {activeFaqs.map(([q, a], i) => (
-              <div className="faq-item" key={q + i}>
-                <button
-                  type="button"
-                  onClick={() => setOpen(open === i ? null : i)}
-                  aria-expanded={open === i}
+                <a
+                  href={appConfig.githubUrl || 'https://github.com/WalZetass-kar/CariKostKita'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="footer-social-icon"
+                  aria-label="GitHub Repository"
                 >
-                  <span>{q}</span>
-                  <b>
-                    <FontAwesomeIcon icon={open === i ? faChevronUp : faChevronDown} style={{ fontSize: 13 }} />
-                  </b>
-                </button>
-                {open === i && <p>{a}</p>}
+                  <FontAwesomeIcon icon={faGithub} />
+                </a>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* Feedback Section with Scroll Animation */}
-      {appConfig.feedbackActive !== false && (
-        <section className="feedback reveal-on-scroll">
-          <div className="shell">
-            <p className="eyebrow">UJI COBA & MASUKAN</p>
-            <h2>{appConfig.feedbackTitle || `Bantu kami menyempurnakan ${appConfig.appName}`}</h2>
-            <p>
-              {appConfig.feedbackDesc || `Menemukan bug atau punya usulan fitur untuk ${appConfig.appName}? Sampaikan masukan Anda langsung ke admin WhatsApp kami.`}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 22 }}>
-              <a
-                className="download"
-                style={{ background: '#25D366' }}
-                href={waHelpUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <FontAwesomeIcon icon={faWhatsapp} />
-                <span>{appConfig.feedbackButtonLabel || 'Kirim Masukan via WhatsApp'}</span>
-              </a>
+            {/* Col 2: Navigation */}
+            <div>
+              <h3 className="footer-col-title">Navigasi Utama</h3>
+              <ul className="footer-links-list">
+                <li><a href="#akomodasi">Koleksi Akomodasi</a></li>
+                <li><a href="#aplikasi">Fitur Aplikasi</a></li>
+                <li><a href="#cara-kerja">Cara Kerja</a></li>
+                <li><a href="#statistik">Statistik Platform</a></li>
+                <li><a href="#kepercayaan">Kepercayaan & Keamanan</a></li>
+                <li><a href="#faq">Tanya Jawab (FAQ)</a></li>
+              </ul>
+            </div>
+
+            {/* Col 3: Fitur Unggulan */}
+            <div>
+              <h3 className="footer-col-title">Fitur Unggulan</h3>
+              <ul className="footer-links-list">
+                <li><a href="#aplikasi">Radius Kampus UNRI / UIR</a></li>
+                <li><a href="#aplikasi">Transparansi Listrik All-in</a></li>
+                <li><a href="#aplikasi">Roommate Matchmaker</a></li>
+                <li><a href="#pemilik">Pasang Listing Kost Gratis</a></li>
+                <li>
+                  <button type="button" onClick={() => setShowModal(true)}>
+                    Panduan Unduh APK
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Col 4: Kontak & Legalitas */}
+            <div>
+              <h3 className="footer-col-title">Kontak & Bantuan</h3>
+              <ul className="footer-links-list">
+                <li>
+                  <a href={waHelpUrl} target="_blank" rel="noopener noreferrer">
+                    <FontAwesomeIcon icon={faWhatsapp} className="text-[#25D366] mr-2" />
+                    Bantuan WhatsApp
+                  </a>
+                </li>
+                <li>
+                  <a href={`mailto:${appConfig.supportEmail || 'support@carikostkita.id'}`}>
+                    <FontAwesomeIcon icon={faEnvelope} className="mr-2 text-[#74827C]" />
+                    {appConfig.supportEmail || 'support@carikostkita.id'}
+                  </a>
+                </li>
+                <li className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLegalModal({
+                        open: true,
+                        title: 'Syarat & Ketentuan Penggunaan',
+                        content: appConfig.legalTerms,
+                      })
+                    }
+                  >
+                    Syarat & Ketentuan
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLegalModal({
+                        open: true,
+                        title: 'Kebijakan Privasi',
+                        content: appConfig.legalPrivacy,
+                      })
+                    }
+                  >
+                    Kebijakan Privasi
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
-        </section>
-      )}
 
-      {/* Final CTA */}
-      <section className="final-cta reveal-on-scroll">
-        <div className="shell final-cta__inner">
-          <div>
-            <p className="eyebrow eyebrow--light">{appConfig.finalCtaEyebrow || 'JANGAN TUNGGU LAGI!'}</p>
-            <h2>{appConfig.finalCtaTitle || 'Yuk, Temukan Kost Terbaikmu Sekarang!'}</h2>
-            <p>{appConfig.finalCtaDesc || `Download ${appConfig.appName} sekarang dan mulai pencarian kost impianmu di ${appConfig.targetCity}.`}</p>
+          <div className="footer-bottom-bar">
+            <div>
+              © {new Date().getFullYear()} {appConfig.appName || 'CariKostKita'}. Hak cipta dilindungi undang-undang.
+            </div>
+            <div className="flex items-center gap-4 text-xs">
+              <span>Kota Pekanbaru, Provinsi Riau</span>
+              <span>•</span>
+              <span>Rilis v1.3.0</span>
+            </div>
           </div>
-          <Button
-            apk={apk}
-            light
-            label={appConfig.finalCtaButtonLabel || 'Download APK Sekarang'}
-            onDownloadClick={() => setShowModal(true)}
-          />
         </div>
-      </section>
+      </footer>
 
-
-      {/* Floating WhatsApp Quick Action */}
+      {/* ------------------------------------------------ Floating WhatsApp */}
       <a
         href={waHelpUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="floating-wa"
-        title="Chat WhatsApp Bantuan"
-        aria-label="Chat WhatsApp Bantuan"
+        className="floating-wa-btn"
+        aria-label="Hubungi Admin CariKostKita melalui WhatsApp"
       >
-        <FontAwesomeIcon icon={faWhatsapp} size="lg" />
-        <span>Bantuan WhatsApp</span>
+        <FontAwesomeIcon icon={faWhatsapp} className="text-xl" />
+        <span>Tanya Admin</span>
       </a>
 
-      {/* Pop-up Modal Dialog (Promotional / Announcement Pop-up) */}
+      {/* ------------------------------------------------- Sync Status Pill */}
+      <div className="sync-status-pill">
+        <span
+          className={`sync-dot ${
+            realtimeStatus === 'SUBSCRIBED' ? 'sync-dot--live' : 'sync-dot--idle'
+          }`}
+        />
+        <span>
+          {realtimeStatus === 'SUBSCRIBED'
+            ? 'Sinkronisasi Aktif'
+            : realtimeStatus === 'CONNECTING'
+            ? 'Menghubungkan...'
+            : 'Mode Siaga'}
+        </span>
+      </div>
+
+      {/* ---------------------------------------- Modal: Panduan Pasang APK */}
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div
+            className="modal-box"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Panduan Pasang Aplikasi CariKostKita"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>Panduan Pasang Aplikasi APK Android</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowModal(false)}
+                aria-label="Tutup panduan"
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p className="mb-4">
+                Berkas APK CariKostKita <b>{appConfig.versionName || 'v1.3.0'}</b> sedang diunduh ke perangkat Anda. Jika peramban (Chrome) menampilkan dialog peringatan standar, ikuti langkah mudah berikut:
+              </p>
+
+              <div className="install-guide-steps mb-6">
+                <div className="install-guide-step-card">
+                  <div className="install-guide-num">1</div>
+                  <div>
+                    <h4 className="font-bold text-[#111815] mb-1">Pilih &quot;Tetap Unduh&quot;</h4>
+                    <p className="text-xs text-[#74827C]">
+                      Peringatan ini adalah standar keamanan Chrome untuk semua file instalasi APK di luar Google Play Store.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="install-guide-step-card">
+                  <div className="install-guide-num">2</div>
+                  <div>
+                    <h4 className="font-bold text-[#111815] mb-1">Izinkan Pemasangan</h4>
+                    <p className="text-xs text-[#74827C]">
+                      Buka notifikasi unduhan, lalu aktifkan opsi &quot;Izinkan dari sumber ini&quot; di pengaturan keamanan HP Android Anda.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="install-guide-step-card">
+                  <div className="install-guide-num">3</div>
+                  <div>
+                    <h4 className="font-bold text-[#111815] mb-1">Buka Aplikasi & Mulai Cari</h4>
+                    <p className="text-xs text-[#74827C]">
+                      Selesai! Aplikasi langsung dapat digunakan tanpa harus login untuk mencari kost di Pekanbaru.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#F0F6F3] border border-[#D1E3DA] rounded-lg text-xs text-[#134E39] mb-6 flex items-start gap-2">
+                <FontAwesomeIcon icon={faShieldHalved} className="mt-0.5" />
+                <span>
+                  {appConfig.securityModalNote ||
+                    'Berkas APK CariKostKita 100% aman, bebas iklan berbahaya, dan terenkripsi resmi.'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  className="btn-secondary !h-10 text-xs"
+                  onClick={() => setShowModal(false)}
+                >
+                  Tutup
+                </button>
+                <a
+                  href={apk}
+                  download
+                  className="btn-primary !h-10 text-xs"
+                  onClick={() => setShowModal(false)}
+                >
+                  <FontAwesomeIcon icon={faDownload} />
+                  <span>Unduh Ulang APK</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------- Modal: CMS Announcement Popup */}
       {appConfig.popupActive && showPopupModal && (
         <div
           className="modal-overlay"
@@ -1260,222 +1492,113 @@ export default function LandingClient({
             className="modal-box"
             role="dialog"
             aria-modal="true"
-            aria-label={appConfig.popupTitle || 'Promo aplikasi'}
-            style={{ maxWidth: 480, textAlign: 'center', padding: '24px 20px' }}
+            aria-label={appConfig.popupTitle || 'Pengumuman'}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
-              className="modal-close"
-              onClick={() => {
-                setShowPopupModal(false);
-                dismissPopupSignature(appConfig);
-              }}
-              aria-label="Tutup Dialog"
-            >
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-            {appConfig.popupImageUrl && (
-              <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden', maxHeight: 220 }}>
-                <img
-                  src={withRevision(appConfig.popupImageUrl, settingsRevision)}
-                  alt={appConfig.popupTitle || ""}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-            )}
-            {appConfig.popupTitle && (
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--maroon)', marginBottom: 8 }}>
-                {appConfig.popupTitle}
-              </h3>
-            )}
-            {appConfig.popupContent && (
-              <p style={{ fontSize: 13, color: '#463a35', lineHeight: 1.6, marginBottom: 18, whiteSpace: 'pre-wrap' }}>
-                {appConfig.popupContent}
-              </p>
-            )}
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-              {appConfig.popupButtonLabel && appConfig.popupButtonUrl && (
-                <a
-                  className="download"
-                  href={appConfig.popupButtonUrl}
-                  target={appConfig.popupButtonUrl.startsWith('http') ? '_blank' : '_self'}
-                  rel="noopener noreferrer"
+            <div className="modal-header">
+              <h3>{appConfig.popupTitle || 'Informasi Penting'}</h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => {
+                  setShowPopupModal(false);
+                  dismissPopupSignature(appConfig);
+                }}
+                aria-label="Tutup dialog"
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {appConfig.popupImageUrl && (
+                <div className="mb-4 rounded-xl overflow-hidden border border-[#E8ECE9]">
+                  <Image
+                    src={appConfig.popupImageUrl}
+                    alt={appConfig.popupTitle}
+                    width={500}
+                    height={260}
+                    className="w-full h-auto object-cover"
+                    unoptimized
+                  />
+                </div>
+              )}
+
+              <p className="mb-6 whitespace-pre-line">{appConfig.popupContent}</p>
+
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  className="btn-secondary !h-10 text-xs"
                   onClick={() => {
                     setShowPopupModal(false);
                     dismissPopupSignature(appConfig);
                   }}
                 >
-                  {appConfig.popupButtonLabel}
-                </a>
-              )}
-              <button
-                type="button"
-                className="download download--light"
-                onClick={() => {
-                  setShowPopupModal(false);
-                  dismissPopupSignature(appConfig);
-                }}
-              >
-                Tutup
-              </button>
+                  Tutup
+                </button>
+                {appConfig.popupButtonUrl && (
+                  <a
+                    href={appConfig.popupButtonUrl}
+                    className="btn-primary !h-10 text-xs"
+                    onClick={() => {
+                      setShowPopupModal(false);
+                      dismissPopupSignature(appConfig);
+                    }}
+                  >
+                    <span>{appConfig.popupButtonLabel || 'Buka Tautan'}</span>
+                    <FontAwesomeIcon icon={faArrowRight} />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Android Play Protect / Unknown Sources Modal */}
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-box" role="dialog" aria-modal="true" aria-label="Panduan Pasang Aplikasi CariKostKita" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="modal-close" onClick={() => setShowModal(false)} aria-label="Tutup dialog panduan">
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--maroon)', fontWeight: 700, fontSize: 16 }}>
-              <FontAwesomeIcon icon={faTriangleExclamation} color="#D97706" />
-              <span>Panduan Pasang Aplikasi (APK Android)</span>
-            </div>
-            <p style={{ fontSize: 13, color: '#52433D', marginTop: 10, lineHeight: 1.6 }}>
-              File APK <b>{appConfig.versionName || 'v1.1.4'}</b> sedang diunduh ke perangkat Anda. Jika peramban (Chrome) menampilkan dialog peringatan standar, ikuti langkah berikut:
-            </p>
-            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '14px 16px', borderRadius: 10, fontSize: 13, marginTop: 12, color: '#92400E', lineHeight: 1.7 }}>
-              <b style={{ display: 'block', marginBottom: 4, color: '#78350F' }}>🚀 3 Langkah Instalasi Mudah:</b>
-              1. Tekan tombol <b>&quot;Tetap Download&quot;</b> / <b>&quot;Download anyway&quot;</b> pada Chrome.<br />
-              2. Buka berkas yang telah selesai diunduh di panel notifikasi atau folder Download.<br />
-              3. Jika diminta izin sistem, aktifkan <b>&quot;Izinkan dari sumber ini&quot;</b>, lalu klik <b>&quot;Instal&quot;</b>.
-            </div>
-            <p style={{ fontSize: 12, color: '#6B605A', marginTop: 12 }}>
-              🛡️ {appConfig.securityModalNote || `Berkas APK CariKostKita 100% aman, bebas iklan berbahaya, dan terenkripsi resmi.`}
-            </p>
-            <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="download download--light"
-                onClick={() => setShowModal(false)}
-              >
-                Sudah Paham
-              </button>
-              <a className="download" href={apk} download onClick={() => setShowModal(false)}>
-                Unduh Ulang APK
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Legal Information Modal (Privacy Policy & Terms of Service) */}
+      {/* ----------------------------------------- Modal: Legal Policies */}
       {legalModal.open && (
-        <div className="modal-overlay" onClick={() => setLegalModal({ open: false, title: '', content: '' })}>
-          <div className="modal-box" role="dialog" aria-modal="true" aria-label={legalModal.title || 'Informasi legal'} style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="modal-close" onClick={() => setLegalModal({ open: false, title: '', content: '' })} aria-label="Tutup dialog informasi">
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--maroon)', fontWeight: 700, fontSize: 16 }}>
-              <FontAwesomeIcon icon={faFileLines} />
-              <span>{legalModal.title}</span>
-            </div>
-            <div style={{ maxHeight: '60vh', overflowY: 'auto', marginTop: 14, fontSize: 13, lineHeight: 1.7, color: '#463a35', whiteSpace: 'pre-wrap', paddingRight: 6 }}>
-              {legalModal.content || 'Konten belum diisi.'}
-            </div>
-            <div style={{ marginTop: 18, textAlign: 'right' }}>
+        <div
+          className="modal-overlay"
+          onClick={() => setLegalModal({ open: false, title: '', content: '' })}
+        >
+          <div
+            className="modal-box"
+            role="dialog"
+            aria-modal="true"
+            aria-label={legalModal.title}
+            style={{ maxWidth: 640 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h3>{legalModal.title}</h3>
               <button
                 type="button"
-                className="download"
-                style={{ cursor: 'pointer' }}
+                className="modal-close-btn"
                 onClick={() => setLegalModal({ open: false, title: '', content: '' })}
+                aria-label="Tutup dialog"
               >
-                Tutup
+                <FontAwesomeIcon icon={faXmark} />
               </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="whitespace-pre-line text-sm text-[#48544F]">
+                {legalModal.content || 'Konten belum tersedia.'}
+              </div>
+              <div className="mt-6 text-right">
+                <button
+                  type="button"
+                  className="btn-secondary !h-10 text-xs"
+                  onClick={() => setLegalModal({ open: false, title: '', content: '' })}
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-      </main>
-      {/* Footer */}
-      <footer>
-        <div className="shell footer-grid">
-          <div>
-            <a href="#beranda" className="brand">
-              {(appConfig.footerLogoUrl || appConfig.logoUrl) && !footerLogoFailed ? (
-                <img
-                  src={withRevision(appConfig.footerLogoUrl || appConfig.logoUrl, settingsRevision)}
-                  alt=""
-                  onError={() => setFooterLogoFailed(true)}
-                  style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6 }}
-                />
-              ) : (
-                <span className="brand__mark">
-                  <FontAwesomeIcon icon={faBuilding} />
-                </span>
-              )}
-              {appConfig.appName}
-            </a>
-            <p>{appConfig.footerTagline || appConfig.tagline || `Kost terbaik, untuk masa depanmu di ${appConfig.targetCity}.`}</p>
-            {appConfig.address && <p style={{ fontSize: 12, marginTop: 4, opacity: 0.85 }}>{appConfig.address}</p>}
-
-            <div style={{ display: 'flex', gap: 14, fontSize: 12, marginTop: 12, opacity: 0.85 }}>
-              <button
-                type="button"
-                onClick={() => setLegalModal({ open: true, title: 'Kebijakan Privasi', content: appConfig.legalPrivacy })}
-                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Kebijakan Privasi
-              </button>
-              <span>•</span>
-              <button
-                type="button"
-                onClick={() => setLegalModal({ open: true, title: 'Syarat & Ketentuan', content: appConfig.legalTerms })}
-                style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer', textDecoration: 'underline' }}
-              >
-                Syarat & Ketentuan
-              </button>
-            </div>
-          </div>
-
-          <nav aria-label="Navigasi footer">
-            {activeNavLinks.map((item, i) => (
-              <a href={item.href} key={item.href + i}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="footer-social">
-            <a href={appConfig.githubUrl || repo} target="_blank" rel="noopener noreferrer" title="GitHub" aria-label="GitHub">
-              <FontAwesomeIcon icon={faGithub} size="lg" />
-            </a>
-            <a href={waHelpUrl} target="_blank" rel="noopener noreferrer" title="WhatsApp" aria-label="WhatsApp" style={{ color: '#25D366' }}>
-              <FontAwesomeIcon icon={faWhatsapp} size="lg" />
-            </a>
-            {appConfig.instagram && (
-              <a href={appConfig.instagram} target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram" style={{ color: '#E1306C' }}>
-                <FontAwesomeIcon icon={faInstagram} size="lg" />
-              </a>
-            )}
-            {appConfig.facebook && (
-              <a href={appConfig.facebook} target="_blank" rel="noopener noreferrer" title="Facebook" aria-label="Facebook" style={{ color: '#1877F2' }}>
-                <FontAwesomeIcon icon={faFacebook} size="lg" />
-              </a>
-            )}
-            {appConfig.tiktok && (
-              <a href={appConfig.tiktok} target="_blank" rel="noopener noreferrer" title="TikTok" aria-label="TikTok">
-                <FontAwesomeIcon icon={faTiktok} size="lg" />
-              </a>
-            )}
-            {appConfig.youtube && (
-              <a href={appConfig.youtube} target="_blank" rel="noopener noreferrer" title="YouTube" aria-label="YouTube" style={{ color: '#FF0000' }}>
-                <FontAwesomeIcon icon={faYoutube} size="lg" />
-              </a>
-            )}
-            {appConfig.linkedin && (
-              <a href={appConfig.linkedin} target="_blank" rel="noopener noreferrer" title="LinkedIn" aria-label="LinkedIn" style={{ color: '#0A66C2' }}>
-                <FontAwesomeIcon icon={faLinkedin} size="lg" />
-              </a>
-            )}
-          </div>
-        </div>
-        <div className="shell copyright">{appConfig.footerCopyright || `© 2026 ${appConfig.appName}. All rights reserved.`}</div>
-      </footer>
     </div>
   );
 }
