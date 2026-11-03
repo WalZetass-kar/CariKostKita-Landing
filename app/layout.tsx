@@ -66,7 +66,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#134E39',
+  themeColor: '#790F13',
   width: 'device-width',
   initialScale: 1,
 };
@@ -74,7 +74,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id" className={`scroll-smooth ${jakartaSans.variable}`}>
-      <body className={`${jakartaSans.className} antialiased bg-[#FCFCFA] text-[#111815]`}>
+      <body className={`${jakartaSans.className} antialiased bg-[#FCFAF5] text-[#261B19]`}>
         {children}
       </body>
     </html>

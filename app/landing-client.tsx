@@ -415,7 +415,10 @@ export default function LandingClient({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FCFCFA]">
+    <div
+      className="min-h-screen flex flex-col bg-[#FCFAF5]"
+      style={{ '--brand': appConfig.brandColor || '#790F13' } as React.CSSProperties}
+    >
       {/* ------------------------------------------------------------- Header */}
       <header className={`site-header ${isScrolled ? 'site-header--scrolled' : ''}`}>
         <div className="shell">
@@ -552,7 +555,7 @@ export default function LandingClient({
               {/* Specs Meta */}
               <div className="hero-meta">
                 <span className="hero-meta-item">
-                  <FontAwesomeIcon icon={faAndroid} className="text-[#134E39]" />
+                  <FontAwesomeIcon icon={faAndroid} className="text-[var(--brand)]" />
                   <span>Versi {appConfig.versionName || 'v1.3.0'}</span>
                 </span>
                 <span className="hero-meta-dot" />
@@ -563,7 +566,7 @@ export default function LandingClient({
                 <button
                   type="button"
                   onClick={() => setShowModal(true)}
-                  className="text-[#134E39] font-bold underline cursor-pointer hover:text-[#0E3B2B]"
+                  className="text-[var(--brand)] font-bold underline cursor-pointer hover:opacity-80"
                 >
                   Panduan Pasang APK
                 </button>
@@ -812,9 +815,9 @@ export default function LandingClient({
           )}
 
           {/* Bottom Callout */}
-          <div className="mt-12 p-8 bg-[#F0F6F3] border border-[#D1E3DA] rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="mt-12 p-8 bg-[#FDF2F2] border border-[#F0CECE] rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
-              <h3 className="text-lg font-bold text-[#134E39] mb-1">
+              <h3 className="text-lg font-bold text-[var(--brand)] mb-1">
                 Ingin melihat 1.160+ pilihan kost lainnya di seluruh area Pekanbaru?
               </h3>
               <p className="text-sm text-[#48544F]">
@@ -1448,7 +1451,7 @@ export default function LandingClient({
                 </div>
               </div>
 
-              <div className="p-3 bg-[#F0F6F3] border border-[#D1E3DA] rounded-lg text-xs text-[#134E39] mb-6 flex items-start gap-2">
+              <div className="p-3 bg-[#FDF2F2] border border-[#F0CECE] rounded-lg text-xs text-[var(--brand)] mb-6 flex items-start gap-2">
                 <FontAwesomeIcon icon={faShieldHalved} className="mt-0.5" />
                 <span>
                   {appConfig.securityModalNote ||

@@ -4,45 +4,45 @@
 
 /* =========================================================================
    CariKostKita — Premium Property-Tech Design System
-   Visual Direction: Modern Editorial, Sophisticated Forest Green Accent,
-   Warm Neutral Canvases, Refined Spacing & Typography.
+   Palet Resmi: Merah Maroon (#790F13) & Putih Tulang (#FCFAF5)
+   Modern Editorial, Proporsional, Terhubung Penuh dengan Admin-Gue
    ========================================================================= */
 
 :root {
-  /* Brand Palette */
-  --brand: #134E39;
-  --brand-hover: #0E3B2B;
-  --brand-accent: #1B6A4E;
-  --brand-deep: #0B2B1F;
-  --brand-soft: #F0F6F3;
-  --brand-border: #D1E3DA;
+  /* Brand Palette — Merah Maroon */
+  --brand: #790F13;
+  --brand-hover: #5F0C0F;
+  --brand-accent: #9E1A20;
+  --brand-deep: #3A090B;
+  --brand-soft: #FDF2F2;
+  --brand-border: #F0CECE;
   --gold: #C58B39;
   --gold-soft: #FCF6EC;
 
-  /* Neutrals */
-  --bg-canvas: #FCFCFA;
+  /* Neutrals — Putih Tulang & Krem */
+  --bg-canvas: #FCFAF5;
   --bg-surface: #FFFFFF;
-  --bg-subtle: #F6F6F2;
-  --bg-dark: #111815;
-  --bg-dark-surface: #18221E;
+  --bg-subtle: #F5EFE6;
+  --bg-dark: #3A090B;
+  --bg-dark-surface: #4A0E10;
 
-  /* Typography */
-  --text-primary: #111815;
-  --text-secondary: #48544F;
-  --text-muted: #74827C;
+  /* Typography — Dark Charcoal Warm */
+  --text-primary: #261B19;
+  --text-secondary: #5C4E4B;
+  --text-muted: #827471;
   --text-inverse: #FFFFFF;
 
-  /* Borders */
-  --border-subtle: #E8ECE9;
-  --border-medium: #D5DED9;
-  --border-strong: #BDC8C2;
+  /* Borders — Putih Tulang Warm Line */
+  --border-subtle: #E8E0D5;
+  --border-medium: #D8CEBF;
+  --border-strong: #C5B9A8;
 
   /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(17, 24, 21, 0.04);
-  --shadow-sm: 0 2px 5px rgba(17, 24, 21, 0.05);
-  --shadow-card: 0 4px 20px -2px rgba(17, 24, 21, 0.06), 0 1px 3px rgba(17, 24, 21, 0.02);
-  --shadow-card-hover: 0 16px 36px -4px rgba(17, 24, 21, 0.10), 0 2px 6px rgba(17, 24, 21, 0.04);
-  --shadow-modal: 0 24px 56px -12px rgba(17, 24, 21, 0.28);
+  --shadow-xs: 0 1px 2px rgba(48, 42, 40, 0.04);
+  --shadow-sm: 0 2px 5px rgba(48, 42, 40, 0.05);
+  --shadow-card: 0 4px 20px -2px rgba(48, 42, 40, 0.06), 0 1px 3px rgba(48, 42, 40, 0.02);
+  --shadow-card-hover: 0 16px 36px -4px rgba(121, 15, 19, 0.12), 0 2px 6px rgba(48, 42, 40, 0.04);
+  --shadow-modal: 0 24px 56px -12px rgba(48, 42, 40, 0.28);
 
   /* WhatsApp */
   --whatsapp: #25D366;
@@ -106,7 +106,7 @@ img {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(252, 252, 250, 0.90);
+  background: rgba(252, 250, 245, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
@@ -114,8 +114,8 @@ img {
 }
 
 .site-header--scrolled {
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 4px 20px -2px rgba(17, 24, 21, 0.05);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 4px 20px -2px rgba(121, 15, 19, 0.06);
   border-bottom: 1px solid var(--border-medium);
 }
 
@@ -153,7 +153,7 @@ img {
   color: #fff;
   font-size: 16px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(19, 78, 57, 0.25);
+  box-shadow: 0 4px 10px rgba(121, 15, 19, 0.25);
 }
 
 .brand__text {
@@ -235,7 +235,7 @@ img {
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.01em;
-  box-shadow: 0 4px 12px rgba(19, 78, 57, 0.20);
+  box-shadow: 0 4px 12px rgba(121, 15, 19, 0.22);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
@@ -245,7 +245,7 @@ img {
   background: var(--brand-hover);
   border-color: var(--brand-hover);
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(19, 78, 57, 0.28);
+  box-shadow: 0 8px 20px rgba(121, 15, 19, 0.30);
   color: #ffffff;
 }
 
@@ -435,7 +435,7 @@ img {
   z-index: 2;
   width: 270px;
   margin: 0 auto;
-  filter: drop-shadow(0 20px 40px rgba(19, 78, 57, 0.18));
+  filter: drop-shadow(0 20px 40px rgba(121, 15, 19, 0.18));
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -563,7 +563,7 @@ img {
 }
 
 .section--dark .section-description {
-  color: #A3B3AB;
+  color: #E8D2D2;
 }
 
 /* ---------------------------------------------- Accommodations Grid / Card */
@@ -606,7 +606,7 @@ img {
   background: var(--brand);
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(19, 78, 57, 0.25);
+  box-shadow: 0 2px 6px rgba(121, 15, 19, 0.25);
 }
 
 .kost-grid {
@@ -685,9 +685,9 @@ img {
 }
 
 .badge-gender--campur {
-  background: #F0FFF4;
-  color: #276749;
-  border: 1px solid #C6F6D5;
+  background: #FDF2F2;
+  color: var(--brand);
+  border: 1px solid var(--brand-border);
 }
 
 .badge-verified {
@@ -833,7 +833,7 @@ img {
 .app-feature-card.active {
   border-color: var(--brand);
   background: var(--brand-soft);
-  box-shadow: 0 4px 16px rgba(19, 78, 57, 0.08);
+  box-shadow: 0 4px 16px rgba(121, 15, 19, 0.08);
 }
 
 .app-feature-icon {
@@ -879,7 +879,7 @@ img {
 .app-showcase-phone-frame img {
   width: 290px;
   height: auto;
-  filter: drop-shadow(0 24px 48px rgba(17, 24, 21, 0.16));
+  filter: drop-shadow(0 24px 48px rgba(48, 42, 40, 0.16));
   border-radius: 36px;
 }
 
@@ -1038,7 +1038,7 @@ img {
 
 /* ------------------------------------------------------- For Kost Owners */
 .owner-card-hero {
-  background: linear-gradient(135deg, #134E39 0%, #0E3829 100%);
+  background: linear-gradient(135deg, #790F13 0%, #5F0C0F 100%);
   border-radius: 20px;
   padding: 56px 48px;
   color: #ffffff;
@@ -1046,7 +1046,7 @@ img {
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
   gap: 48px;
   align-items: center;
-  box-shadow: 0 20px 40px rgba(19, 78, 57, 0.22);
+  box-shadow: 0 20px 40px rgba(121, 15, 19, 0.25);
 }
 
 .owner-title {
@@ -1060,7 +1060,7 @@ img {
 .owner-desc {
   font-size: 16px;
   line-height: 1.7;
-  color: #D2E4DC;
+  color: #F8E5E5;
   margin: 0 0 28px;
 }
 
@@ -1080,11 +1080,11 @@ img {
   gap: 12px;
   font-size: 14px;
   line-height: 1.5;
-  color: #F0F6F3;
+  color: #FDF2F2;
 }
 
 .owner-benefit-item svg {
-  color: #48BB78;
+  color: #F6AD55;
   margin-top: 3px;
   flex-shrink: 0;
 }
@@ -1143,7 +1143,7 @@ img {
 
 /* ------------------------------------------------------------ Download CTA */
 .download-section {
-  background: linear-gradient(135deg, #134E39 0%, #0D3526 100%);
+  background: linear-gradient(135deg, #790F13 0%, #3A090B 100%);
   color: #ffffff;
   padding: 88px 0;
   position: relative;
@@ -1168,7 +1168,7 @@ img {
 .download-text {
   font-size: 16px;
   line-height: 1.7;
-  color: #D2E4DC;
+  color: #F8E5E5;
   margin: 0 0 32px;
   max-width: 560px;
 }
@@ -1185,7 +1185,7 @@ img {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #A3B3AB;
+  color: #E8D2D2;
   margin-top: 18px;
 }
 
@@ -1198,7 +1198,7 @@ img {
 .download-phone-preview img {
   width: 250px;
   height: auto;
-  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.45));
 }
 
 /* ----------------------------------------------------------------- Footer */
@@ -1300,7 +1300,7 @@ img {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 21, 0.65);
+  background: rgba(48, 42, 40, 0.65);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
@@ -1530,7 +1530,7 @@ img {
     background: var(--bg-surface);
     border-top: 1px solid var(--border-subtle);
     gap: 6px;
-    box-shadow: 0 16px 32px rgba(17, 24, 21, 0.08);
+    box-shadow: 0 16px 32px rgba(48, 42, 40, 0.08);
   }
   .mobile-nav-link {
     padding: 12px 14px;
