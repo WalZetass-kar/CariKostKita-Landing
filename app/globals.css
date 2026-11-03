@@ -463,23 +463,54 @@ img {
   padding: 16px 0;
 }
 
+@keyframes phoneFloatSway {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  20% {
+    transform: translateY(-9px) rotate(-1.5deg);
+  }
+  45% {
+    transform: translateY(-18px) rotate(1deg);
+  }
+  70% {
+    transform: translateY(-8px) rotate(1.6deg);
+  }
+  85% {
+    transform: translateY(-3px) rotate(-0.6deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+}
+
 .hero-phone-frame {
   position: relative;
   z-index: 2;
   width: 275px;
   margin: 0 auto;
   filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.55));
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: phoneFloatSway 5.5s ease-in-out infinite;
+  transform-origin: center bottom;
+  will-change: transform;
+  transition: filter 0.35s ease;
 }
 
 .hero-phone-frame:hover {
-  transform: translateY(-4px);
+  animation-play-state: paused;
+  filter: drop-shadow(0 30px 60px rgba(121, 15, 19, 0.35));
 }
 
 .hero-phone-frame img {
   width: 100%;
   height: auto;
   display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-phone-frame {
+    animation: none;
+  }
 }
 
 .hero-phone-device {

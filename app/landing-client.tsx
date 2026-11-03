@@ -449,7 +449,6 @@ export default function LandingClient({
               </div>
               <div className="brand__text">
                 <span>{appConfig.appName || 'CariKostKita'}</span>
-                <span className="brand__badge">{appConfig.targetCity || 'Pekanbaru'}</span>
               </div>
             </a>
 
@@ -499,10 +498,10 @@ export default function LandingClient({
               Cara Kerja
             </a>
             <a href="#statistik" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
-              Statistik Platform
+              Statistik
             </a>
             <a href="#kepercayaan" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
-              Kepercayaan & Keamanan
+              Kepercayaan
             </a>
             <a href="#pemilik" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
               Untuk Pemilik Kost
@@ -634,10 +633,6 @@ export default function LandingClient({
       <section id="akomodasi" className="section section--white">
         <div className="shell">
           <div className="section-header">
-            <div className="eyebrow-badge">
-              <FontAwesomeIcon icon={faBuilding} />
-              <span>Pilihan Akomodasi</span>
-            </div>
             <h2 className="section-title">Koleksi Kost Unggulan di Pekanbaru</h2>
             <p className="section-description">
               Data akomodasi riil dari sistem CariKostKita: informasi harga transparan, kelengkapan fasilitas kamar, dan dokumentasi foto riil.
@@ -832,10 +827,6 @@ export default function LandingClient({
       <section id="aplikasi" className="section section--subtle">
         <div className="shell">
           <div className="section-header">
-            <div className="eyebrow-badge">
-              <FontAwesomeIcon icon={faCompass} />
-              <span>Teknologi Pencarian</span>
-            </div>
             <h2 className="section-title">Dirancang Khusus untuk Kemudahan Pencari Kost</h2>
             <p className="section-description">
               Dari pencarian berbasis radius kampus hingga pencocokan teman sekamar, semua fitur kami bangun demi pengalaman mencari hunian yang nyaman.
@@ -882,10 +873,6 @@ export default function LandingClient({
       <section id="cara-kerja" className="section section--white">
         <div className="shell">
           <div className="section-header section-header--center">
-            <div className="eyebrow-badge">
-              <FontAwesomeIcon icon={faFileLines} />
-              <span>Panduan Praktis</span>
-            </div>
             <h2 className="section-title">Tiga Langkah Mudah Menemukan Kost Idaman</h2>
             <p className="section-description">
               Proses pencarian hunian dibuat transparan, cepat, dan tanpa hambatan birokrasi.
@@ -936,10 +923,6 @@ export default function LandingClient({
       <section id="statistik" className="section section--subtle">
         <div className="shell">
           <div className="section-header section-header--center">
-            <div className="eyebrow-badge">
-              <FontAwesomeIcon icon={faStar} />
-              <span>Statistik Platform</span>
-            </div>
             <h2 className="section-title">Data Riil Komunitas CariKostKita</h2>
             <p className="section-description">
               Angka yang mencerminkan pertumbuhan ekosistem akomodasi kost di Kota Pekanbaru.
@@ -978,10 +961,6 @@ export default function LandingClient({
       <section id="kepercayaan" className="section section--white">
         <div className="shell">
           <div className="section-header">
-            <div className="eyebrow-badge">
-              <FontAwesomeIcon icon={faShieldHalved} />
-              <span>Kepercayaan & Keamanan</span>
-            </div>
             <h2 className="section-title">Komitmen Kami untuk Transparansi & Keamanan Anda</h2>
             <p className="section-description">
               CariKostKita dibangun atas prinsip keterbukaan informasi bagi mahasiswa, perantau, dan pemilik properti di Pekanbaru.
@@ -1051,10 +1030,6 @@ export default function LandingClient({
         <div className="shell">
           <div className="owner-card-hero">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wider mb-4 border border-white/20">
-                <FontAwesomeIcon icon={faBuilding} />
-                <span>Untuk Pemilik Properti di Pekanbaru</span>
-              </div>
               <h2 className="owner-title">Punya Kamar Kost Kosong? Promosikan Gratis di CariKostKita</h2>
               <p className="owner-desc">
                 Jangkau ribuan mahasiswa UNRI, UIR, UIN Suska serta pekerja muda Pekanbaru setiap hari tanpa potongan komisi perantara sepeser pun.
@@ -1103,10 +1078,6 @@ export default function LandingClient({
       <section id="faq" className="section section--subtle">
         <div className="shell">
           <div className="section-header section-header--center">
-            <div className="eyebrow-badge">
-              <FontAwesomeIcon icon={faFileLines} />
-              <span>Pertanyaan Umum</span>
-            </div>
             <h2 className="section-title">Hal yang Sering Ditanyakan</h2>
             <p className="section-description">
               Informasi lengkap seputar instalasi APK, pencarian kamar, dan keamanan transaksi.
@@ -1305,8 +1276,8 @@ export default function LandingClient({
                 <li><a href="#akomodasi">Koleksi Akomodasi</a></li>
                 <li><a href="#aplikasi">Fitur Aplikasi</a></li>
                 <li><a href="#cara-kerja">Cara Kerja</a></li>
-                <li><a href="#statistik">Statistik Platform</a></li>
-                <li><a href="#kepercayaan">Kepercayaan & Keamanan</a></li>
+                <li><a href="#statistik">Statistik</a></li>
+                <li><a href="#kepercayaan">Kepercayaan</a></li>
                 <li><a href="#faq">Tanya Jawab (FAQ)</a></li>
               </ul>
             </div>
@@ -1399,22 +1370,6 @@ export default function LandingClient({
         <FontAwesomeIcon icon={faWhatsapp} className="text-xl" />
         <span>Tanya Admin</span>
       </a>
-
-      {/* ------------------------------------------------- Sync Status Pill */}
-      <div className="sync-status-pill">
-        <span
-          className={`sync-dot ${
-            realtimeStatus === 'SUBSCRIBED' ? 'sync-dot--live' : 'sync-dot--idle'
-          }`}
-        />
-        <span>
-          {realtimeStatus === 'SUBSCRIBED'
-            ? 'Sinkronisasi Aktif'
-            : realtimeStatus === 'CONNECTING'
-            ? 'Menghubungkan...'
-            : 'Mode Siaga'}
-        </span>
-      </div>
 
       {/* ---------------------------------------- Modal: Panduan Pasang APK */}
       {showModal && (
