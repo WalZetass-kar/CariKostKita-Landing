@@ -610,19 +610,32 @@ export default function LandingClient({
               </div>
             </div>
 
-            {/* Right Visual Phone Mockup Composition */}
+            {/* Right Visual Phone Mockup Composition with Video Demo */}
             <div className="hero-visual-wrap">
               <div className="hero-visual-canvas">
                 {/* Smartphone Phone Frame */}
                 <div className="hero-phone-frame">
-                  <Image
-                    src="/mockup-hero-semua.webp"
-                    alt="Pratinjau Aplikasi CariKostKita"
-                    width={270}
-                    height={550}
-                    priority
-                    unoptimized
-                  />
+                  <div className="hero-phone-device">
+                    <div className="hero-phone-notch" />
+                    <div className="hero-phone-screen">
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="auto"
+                        poster="/screenshots/Screenshot_20261103-190219.png"
+                        aria-label="Demo Video Aplikasi CariKostKita"
+                      >
+                        <source src="/demo-hero.webm" type="video/webm" />
+                        <source src="/demo-hero.mp4" type="video/mp4" />
+                        <img
+                          src="/screenshots/Screenshot_20261103-190219.png"
+                          alt="Pratinjau Aplikasi CariKostKita"
+                        />
+                      </video>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
