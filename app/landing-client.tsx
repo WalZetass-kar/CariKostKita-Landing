@@ -94,6 +94,7 @@ const ICON_MAP: Record<string, IconDefinition> = {
   bath: faBath,
   wifi: faWifi,
   motorcycle: faMotorcycle,
+  whatsapp: faWhatsapp as unknown as IconDefinition,
 };
 
 function resolveFaIcon(name?: string, fallback: IconDefinition = faCheck): IconDefinition {
@@ -342,6 +343,17 @@ export default function LandingClient({
     fetchConfig('init');
   }, [fetchConfig]);
 
+  // Dynamic browser tab favicon updater from Admin-Gue
+  useEffect(() => {
+    if (appConfig.faviconUrl && typeof document !== 'undefined') {
+      const link = (document.querySelector("link[rel*='icon']") as HTMLLinkElement) || document.createElement('link');
+      link.type = 'image/x-icon';
+      link.rel = 'shortcut icon';
+      link.href = appConfig.faviconUrl;
+      document.getElementsByTagName('head')[0]?.appendChild(link);
+    }
+  }, [appConfig.faviconUrl]);
+
   // Realtime subscription
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
@@ -424,12 +436,20 @@ export default function LandingClient({
         <div className="shell">
           <div className="nav-wrap">
             <a href="#" className="brand" aria-label="Beranda CariKostKita">
-              <div className="brand__mark">
-                <FontAwesomeIcon icon={faBuilding} />
+              <div className="brand__mark overflow-hidden">
+                {appConfig.logoUrl ? (
+                  <img
+                    src={appConfig.logoUrl}
+                    alt={appConfig.appName || 'Logo CariKostKita'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <FontAwesomeIcon icon={faBuilding} />
+                )}
               </div>
               <div className="brand__text">
                 <span>{appConfig.appName || 'CariKostKita'}</span>
-                <span className="brand__badge">Pekanbaru</span>
+                <span className="brand__badge">{appConfig.targetCity || 'Pekanbaru'}</span>
               </div>
             </a>
 
@@ -969,45 +989,59 @@ export default function LandingClient({
           </div>
 
           <div className="trust-grid-4">
-            <div className="trust-item-card">
-              <div className="trust-item-icon">
-                <FontAwesomeIcon icon={faShieldHalved} />
-              </div>
-              <h3 className="trust-item-title">Kurasi Lapangan Berkala</h3>
-              <p className="trust-item-desc">
-                Setiap data listing kost ditinjau oleh tim moderator untuk memastikan lokasi dan foto sesuai kondisi fisik sesungguhnya.
-              </p>
-            </div>
+            {appConfig.trustItems && appConfig.trustItems.length > 0 ? (
+              appConfig.trustItems.filter((i) => i.is_active !== false).map((item, idx) => (
+                <div key={item.id || idx} className="trust-item-card">
+                  <div className="trust-item-icon">
+                    <FontAwesomeIcon icon={resolveFaIcon(item.icon, faShieldHalved)} />
+                  </div>
+                  <h3 className="trust-item-title">{item.title}</h3>
+                  <p className="trust-item-desc">{item.desc}</p>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="trust-item-card">
+                  <div className="trust-item-icon">
+                    <FontAwesomeIcon icon={faShieldHalved} />
+                  </div>
+                  <h3 className="trust-item-title">Kurasi Lapangan Berkala</h3>
+                  <p className="trust-item-desc">
+                    Setiap data listing kost ditinjau oleh tim moderator untuk memastikan lokasi dan foto sesuai kondisi fisik sesungguhnya.
+                  </p>
+                </div>
 
-            <div className="trust-item-card">
-              <div className="trust-item-icon">
-                <FontAwesomeIcon icon={faBolt} />
-              </div>
-              <h3 className="trust-item-title">Transparansi Biaya & Listrik</h3>
-              <p className="trust-item-desc">
-                Informasi fasilitas dan rincian biaya (apakah listrik token mandiri atau all-in) dicantumkan jelas tanpa biaya tersembunyi.
-              </p>
-            </div>
+                <div className="trust-item-card">
+                  <div className="trust-item-icon">
+                    <FontAwesomeIcon icon={faBolt} />
+                  </div>
+                  <h3 className="trust-item-title">Transparansi Biaya & Listrik</h3>
+                  <p className="trust-item-desc">
+                    Informasi fasilitas dan rincian biaya (apakah listrik token mandiri atau all-in) dicantumkan jelas tanpa biaya tersembunyi.
+                  </p>
+                </div>
 
-            <div className="trust-item-card">
-              <div className="trust-item-icon">
-                <FontAwesomeIcon icon={faWhatsapp} />
-              </div>
-              <h3 className="trust-item-title">Komunikasi Langsung Pemilik</h3>
-              <p className="trust-item-desc">
-                Pengguna terhubung langsung dengan nomor WhatsApp pemilik sah tanpa perantara dan tanpa potongan komisi sewa.
-              </p>
-            </div>
+                <div className="trust-item-card">
+                  <div className="trust-item-icon">
+                    <FontAwesomeIcon icon={faWhatsapp} />
+                  </div>
+                  <h3 className="trust-item-title">Komunikasi Langsung Pemilik</h3>
+                  <p className="trust-item-desc">
+                    Pengguna terhubung langsung dengan nomor WhatsApp pemilik sah tanpa perantara dan tanpa potongan komisi sewa.
+                  </p>
+                </div>
 
-            <div className="trust-item-card">
-              <div className="trust-item-icon">
-                <FontAwesomeIcon icon={faLock} />
-              </div>
-              <h3 className="trust-item-title">Privasi & Bebas Iklan Invasif</h3>
-              <p className="trust-item-desc">
-                Platform bersih tanpa iklan pop-up yang mengganggu kenyamanan bernavigasi dan data kontak pengguna terlindungi.
-              </p>
-            </div>
+                <div className="trust-item-card">
+                  <div className="trust-item-icon">
+                    <FontAwesomeIcon icon={faLock} />
+                  </div>
+                  <h3 className="trust-item-title">Privasi & Bebas Iklan Invasif</h3>
+                  <p className="trust-item-desc">
+                    Platform bersih tanpa iklan pop-up yang mengganggu kenyamanan bernavigasi dan data kontak pengguna terlindungi.
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -1127,9 +1161,20 @@ export default function LandingClient({
         <div className="shell">
           <div className="download-box">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wider mb-4 border border-white/20">
-                <FontAwesomeIcon icon={faAndroid} />
-                <span>Rilis Resmi Android v1.3.0</span>
+              <div className="flex items-center gap-3 mb-4">
+                {(appConfig.appIconUrl || appConfig.logoUrl) && (
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-white p-1 shadow-sm border border-white/20 shrink-0">
+                    <img
+                      src={appConfig.appIconUrl || appConfig.logoUrl}
+                      alt="App Icon"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                )}
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">
+                  <FontAwesomeIcon icon={faAndroid} />
+                  <span>Rilis Resmi Android {appConfig.versionName || 'v1.3.0'}</span>
+                </div>
               </div>
 
               <h2 className="download-headline">
@@ -1189,8 +1234,16 @@ export default function LandingClient({
             {/* Col 1: Brand Info */}
             <div className="footer-col-brand">
               <a href="#" className="brand">
-                <div className="brand__mark">
-                  <FontAwesomeIcon icon={faBuilding} />
+                <div className="brand__mark overflow-hidden">
+                  {appConfig.footerLogoUrl || appConfig.logoUrl ? (
+                    <img
+                      src={appConfig.footerLogoUrl || appConfig.logoUrl}
+                      alt={appConfig.appName || 'Logo CariKostKita'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <FontAwesomeIcon icon={faBuilding} />
+                  )}
                 </div>
                 <div className="brand__text">
                   <span>{appConfig.appName || 'CariKostKita'}</span>

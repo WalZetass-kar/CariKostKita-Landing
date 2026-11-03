@@ -42,11 +42,19 @@ export async function generateMetadata(): Promise<Metadata> {
     .map((keyword) => keyword.trim())
     .filter(Boolean);
 
+  const faviconUrl = readSetting(settings, 'faviconUrl', 'favicon_url', '/favicon.ico');
+  const appIconUrl = readSetting(settings, 'appIconUrl', 'app_icon_url', '/icon.png');
+
   return {
     metadataBase: new URL(SITE_URL),
     title,
     description,
     keywords,
+    icons: {
+      icon: faviconUrl || '/favicon.ico',
+      shortcut: faviconUrl || '/favicon.ico',
+      apple: appIconUrl || '/icon.png',
+    },
     authors: [{ name: 'Tim CariKostKita' }],
     openGraph: {
       type: 'website',
