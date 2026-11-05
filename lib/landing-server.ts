@@ -29,6 +29,21 @@ export const loadLandingSettings = cache(async (): Promise<Record<string, any> |
   }
 });
 
+export const loadLandingAds = cache(async (): Promise<any[]> => {
+  try {
+    const res = await fetch(`${publicApiUrl}/api/v1/public/settings/ads`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const data = json?.data;
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+});
+
 export const readSetting = (
   settings: Record<string, any> | null,
   camel: string,

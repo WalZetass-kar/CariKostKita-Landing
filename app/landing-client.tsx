@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -176,8 +176,10 @@ interface KostListing {
 
 export default function LandingClient({
   initialSettings,
+  initialAds = [],
 }: {
   initialSettings?: Record<string, any> | null;
+  initialAds?: any[];
 }) {
   const [appConfig, setAppConfig] = useState<AppConfigState>(() =>
     resolveSettings(initialSettings, defaultConfig)
@@ -208,7 +210,41 @@ export default function LandingClient({
 
   // FAQ accordion state
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [ads, setAds] = useState<any[]>([]);
+  const [ads, setAds] = useState<any[]>(initialAds || []);
+
+  const activePopupAd = useMemo(() => {
+    return (ads || []).find(
+      (a) =>
+        (String(a.ad_type || '').toLowerCase() === 'pop-up' ||
+          String(a.ad_type || '').toLowerCase() === 'popup' ||
+          String(a.position || '').toLowerCase().includes('buka')) &&
+        a.is_active !== false
+    );
+  }, [ads]);
+
+  useEffect(() => {
+    if (activePopupAd) {
+      try {
+        const sig = `ckk_ad_popup_${activePopupAd.id}_${activePopupAd.title}`;
+        const dismissed = sessionStorage.getItem('ckk_ad_popup_dismissed');
+        if (dismissed !== sig) {
+          setShowPopupModal(true);
+        }
+      } catch (_) {
+        setShowPopupModal(true);
+      }
+    }
+  }, [activePopupAd]);
+
+  const handleClosePopup = useCallback(() => {
+    setShowPopupModal(false);
+    if (activePopupAd) {
+      try {
+        sessionStorage.setItem('ckk_ad_popup_dismissed', `ckk_ad_popup_${activePopupAd.id}_${activePopupAd.title}`);
+      } catch (_) {}
+    }
+    dismissPopupSignature(appConfig);
+  }, [activePopupAd, appConfig]);
 
   // Fallback images
   const localRoomImages = [
@@ -436,15 +472,13 @@ export default function LandingClient({
       if (e.key === 'Escape') {
         if (legalModal.open) setLegalModal({ open: false, title: '', content: '' });
         else if (showModal) setShowModal(false);
-        else if (showPopupModal) {
-          setShowPopupModal(false);
-          dismissPopupSignature(appConfig);
-        } else if (mobileMenuOpen) setMobileMenuOpen(false);
+        else if (showPopupModal) handleClosePopup();
+        else if (mobileMenuOpen) setMobileMenuOpen(false);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [legalModal.open, showModal, showPopupModal, mobileMenuOpen, appConfig]);
+  }, [legalModal.open, showModal, showPopupModal, mobileMenuOpen, handleClosePopup]);
 
   const apk = appConfig.apk || '/releases/CariKostKita-v1.3.0-release.apk';
   const waNumber = appConfig.waNumber || '6285272160879';
@@ -709,6 +743,58 @@ export default function LandingClient({
           </div>
         </div>
       </section>
+
+      {/* --------------------------------------- Promotional Ads / Sponsored Banners */}
+      {ads.length > 0 && (
+        <section className="py-6 bg-[#F9F7F2] border-y border-[#ECE7DA]" aria-label="Iklan dan Promosi">
+          <div className="shell">
+            <div className="space-y-4">
+              {ads.map((ad, idx) => (
+                <div
+                  key={ad.id || idx}
+                  className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#790F13] via-[#8B1A1E] to-[#45090B] text-white shadow-md flex flex-col md:flex-row items-center justify-between p-5 md:p-6 gap-6"
+                >
+                  <div className="flex-1 space-y-2 text-center md:text-left z-10">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide bg-amber-400 text-stone-950 shadow-xs">
+                      <span>Promosi Pilihan</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                      {ad.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-200 line-clamp-2 max-w-xl">
+                      {ad.description ||
+                        'Dapatkan promo kost hemat awal tahun dengan harga terjangkau dan fasilitas terbaik di Pekanbaru.'}
+                    </p>
+                    {ad.target_url && (
+                      <div className="pt-2">
+                        <a
+                          href={ad.target_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-stone-950 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all transform hover:-translate-y-0.5"
+                        >
+                          <span>Lihat Promo Selengkapnya</span>
+                          &rarr;
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  {ad.image_url && (
+                    <div className="w-full md:w-80 h-44 rounded-xl overflow-hidden shadow-lg shrink-0 border-2 border-white/20 z-10 bg-stone-900">
+                      <img
+                        src={ad.image_url}
+                        alt={ad.title}
+                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* --------------------------------------- Featured Accommodations Section */}
       <section id="akomodasi" className="section section--white">
@@ -1542,82 +1628,89 @@ export default function LandingClient({
         </div>
       )}
 
-      {/* -------------------------------- Modal: CMS Announcement Popup */}
-      {appConfig.popupActive && showPopupModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => {
-            setShowPopupModal(false);
-            dismissPopupSignature(appConfig);
-          }}
-        >
-          <div
-            className="modal-box"
-            role="dialog"
-            aria-modal="true"
-            aria-label={appConfig.popupTitle || 'Pengumuman'}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h3>{appConfig.popupTitle || 'Informasi Penting'}</h3>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => {
-                  setShowPopupModal(false);
-                  dismissPopupSignature(appConfig);
-                }}
-                aria-label="Tutup dialog"
-              >
-                <FontAwesomeIcon icon={faXmark} />
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {appConfig.popupImageUrl && (
-                <div className="mb-4 rounded-xl overflow-hidden border border-[#E8ECE9]">
-                  <Image
-                    src={appConfig.popupImageUrl}
-                    alt={appConfig.popupTitle}
-                    width={500}
-                    height={260}
-                    className="w-full h-auto object-cover"
-                    unoptimized
-                  />
+      {/* -------------------------------- Modal: CMS Announcement / Advertisement Popup */}
+      {showPopupModal &&
+        (Boolean(activePopupAd) ||
+          (appConfig.popupActive &&
+            (Boolean(appConfig.popupTitle) ||
+              Boolean(appConfig.popupContent) ||
+              Boolean(appConfig.popupImageUrl)))) && (
+          <div className="modal-overlay" onClick={handleClosePopup}>
+            <div
+              className="modal-box"
+              role="dialog"
+              aria-modal="true"
+              aria-label={activePopupAd?.title || appConfig.popupTitle || 'Informasi Penting'}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  {activePopupAd && (
+                    <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider shrink-0">
+                      Iklan Promosi
+                    </span>
+                  )}
+                  <h3 className="truncate font-bold text-[#111815]">
+                    {activePopupAd?.title || appConfig.popupTitle || 'Informasi Penting'}
+                  </h3>
                 </div>
-              )}
-
-              <p className="mb-6 whitespace-pre-line">{appConfig.popupContent}</p>
-
-              <div className="flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  className="btn-secondary !h-10 text-xs"
-                  onClick={() => {
-                    setShowPopupModal(false);
-                    dismissPopupSignature(appConfig);
-                  }}
+                  className="modal-close-btn"
+                  onClick={handleClosePopup}
+                  aria-label="Tutup dialog"
                 >
-                  Tutup
+                  <FontAwesomeIcon icon={faXmark} />
                 </button>
-                {appConfig.popupButtonUrl && (
-                  <a
-                    href={appConfig.popupButtonUrl}
-                    className="btn-primary !h-10 text-xs"
-                    onClick={() => {
-                      setShowPopupModal(false);
-                      dismissPopupSignature(appConfig);
-                    }}
-                  >
-                    <span>{appConfig.popupButtonLabel || 'Buka Tautan'}</span>
-                    <FontAwesomeIcon icon={faArrowRight} />
-                  </a>
+              </div>
+
+              <div className="modal-body">
+                {(activePopupAd?.image_url || appConfig.popupImageUrl) && (
+                  <div className="mb-4 rounded-xl overflow-hidden border border-[#E8ECE9] max-h-64 sm:max-h-72 bg-stone-100 flex items-center justify-center">
+                    <img
+                      src={activePopupAd?.image_url || appConfig.popupImageUrl}
+                      alt={activePopupAd?.title || appConfig.popupTitle || 'Banner'}
+                      className="w-full h-full object-cover max-h-64 sm:max-h-72"
+                      loading="eager"
+                    />
+                  </div>
                 )}
+
+                <p className="mb-6 whitespace-pre-line text-sm text-[#46544E]">
+                  {activePopupAd?.description ||
+                    appConfig.popupContent ||
+                    'Dapatkan penawaran promo kost terbaik di Pekanbaru dengan harga hemat dan fasilitas lengkap.'}
+                </p>
+
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    className="btn-secondary !h-10 text-xs font-semibold px-4"
+                    onClick={handleClosePopup}
+                  >
+                    Tutup
+                  </button>
+                  {(activePopupAd?.target_url || appConfig.popupButtonUrl) && (
+                    <a
+                      href={activePopupAd?.target_url || appConfig.popupButtonUrl}
+                      target={activePopupAd?.target_url ? '_blank' : undefined}
+                      rel={activePopupAd?.target_url ? 'noopener noreferrer' : undefined}
+                      className="btn-primary !h-10 text-xs font-bold px-4 inline-flex items-center gap-1.5"
+                      onClick={handleClosePopup}
+                    >
+                      <span>
+                        {activePopupAd
+                          ? 'Lihat Promo'
+                          : appConfig.popupButtonLabel || 'Buka Tautan'}
+                      </span>
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* ----------------------------------------- Modal: Legal Policies */}
       {legalModal.open && (
