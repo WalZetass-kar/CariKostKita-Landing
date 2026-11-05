@@ -5,10 +5,15 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
-  const primaryApiUrl = (
+  const rawApi =
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
     process.env.CARIKOSTKITA_API_URL ||
-    'https://api.carikostkita.my.id'
+    'https://api.carikostkita.my.id';
+
+  const primaryApiUrl = (
+    rawApi.includes('carikostkitafastapi.vercel.app')
+      ? 'https://api.carikostkita.my.id'
+      : rawApi
   ).replace(/\/+$/, '');
 
   const queryParams = new URLSearchParams();

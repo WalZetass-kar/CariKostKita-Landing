@@ -62,10 +62,15 @@ import {
 
 config.autoAddCss = false;
 
-const publicApiUrl = (
+const rawApiUrl =
   process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
   process.env.CARIKOSTKITA_API_URL ||
-  'https://api.carikostkita.my.id'
+  'https://api.carikostkita.my.id';
+
+const publicApiUrl = (
+  rawApiUrl.includes('carikostkitafastapi.vercel.app')
+    ? 'https://api.carikostkita.my.id'
+    : rawApiUrl
 ).replace(/\/+$/, '');
 const repo = 'https://github.com/WalZetass-kar/CariKostKita';
 

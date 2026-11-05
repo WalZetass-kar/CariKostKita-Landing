@@ -8,10 +8,15 @@ import { cache } from 'react';
  * is always uncached. The page itself is `force-dynamic`; React `cache()` only
  * deduplicates the read within one request.
  */
-export const publicApiUrl = (
+const rawUrl =
   process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
   process.env.CARIKOSTKITA_API_URL ||
-  'https://api.carikostkita.my.id'
+  'https://api.carikostkita.my.id';
+
+export const publicApiUrl = (
+  rawUrl.includes('carikostkitafastapi.vercel.app')
+    ? 'https://api.carikostkita.my.id'
+    : rawUrl
 ).replace(/\/+$/, '');
 
 export const loadLandingSettings = cache(async (): Promise<Record<string, any> | null> => {

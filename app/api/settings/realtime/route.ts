@@ -15,10 +15,15 @@ const NO_STORE = {
  * which is why the realtime push path was previously dormant.
  */
 export async function GET() {
-  const apiUrl = (
+  const rawApi =
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
     process.env.CARIKOSTKITA_API_URL ||
-    'https://api.carikostkita.my.id'
+    'https://api.carikostkita.my.id';
+
+  const apiUrl = (
+    rawApi.includes('carikostkitafastapi.vercel.app')
+      ? 'https://api.carikostkita.my.id'
+      : rawApi
   ).replace(/\/+$/, '');
 
   try {
