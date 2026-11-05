@@ -21,7 +21,7 @@ jobs:
       # Nilai placeholder hanya untuk build CI. Produksi memakai env Vercel.
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
-      NEXT_PUBLIC_CARIKOSTKITA_API_URL: https://carikostkitafastapi.vercel.app
+      NEXT_PUBLIC_CARIKOSTKITA_API_URL: https://api.carikostkita.my.id
       ADMIN_GUE_API_URL: https://www.admincarikostkita.my.id
     steps:
       - name: Checkout

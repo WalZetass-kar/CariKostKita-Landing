@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
 
   const primaryApiUrl = (
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
-    'https://carikostkitafastapi.vercel.app'
+    process.env.CARIKOSTKITA_API_URL ||
+    'https://api.carikostkita.my.id'
   ).replace(/\/+$/, '');
 
   const queryParams = new URLSearchParams();

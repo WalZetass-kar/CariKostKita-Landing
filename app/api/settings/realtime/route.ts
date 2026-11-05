@@ -17,7 +17,8 @@ const NO_STORE = {
 export async function GET() {
   const apiUrl = (
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
-    'https://carikostkitafastapi.vercel.app'
+    process.env.CARIKOSTKITA_API_URL ||
+    'https://api.carikostkita.my.id'
   ).replace(/\/+$/, '');
 
   try {

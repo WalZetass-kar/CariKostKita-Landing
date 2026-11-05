@@ -20,7 +20,8 @@ async function safeJson(res: Response | null | undefined) {
 export async function GET() {
   const primaryApiUrl = (
     process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
-    'https://carikostkitafastapi.vercel.app'
+    process.env.CARIKOSTKITA_API_URL ||
+    'https://api.carikostkita.my.id'
   ).replace(/\/+$/, '');
 
   const fallbackAdminUrl = (

@@ -64,7 +64,8 @@ config.autoAddCss = false;
 
 const publicApiUrl = (
   process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
-  'https://carikostkitafastapi.vercel.app'
+  process.env.CARIKOSTKITA_API_URL ||
+  'https://api.carikostkita.my.id'
 ).replace(/\/+$/, '');
 const repo = 'https://github.com/WalZetass-kar/CariKostKita';
 
@@ -207,6 +208,7 @@ export default function LandingClient({
 
   // FAQ accordion state
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [ads, setAds] = useState<any[]>([]);
 
   // Fallback images
   const localRoomImages = [
@@ -262,9 +264,27 @@ export default function LandingClient({
     }
   }, []);
 
+  // Fetch ads from API
+  const fetchAds = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ads', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.data) && json.data.length > 0) {
+          setAds(json.data);
+        } else {
+          setAds([]);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch ads', e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchKosts(activeFilter);
-  }, [activeFilter, fetchKosts]);
+    fetchAds();
+  }, [activeFilter, fetchKosts, fetchAds]);
 
   // Fetch configuration
   const fetchConfig = useCallback(async (reason = 'init') => {
@@ -383,6 +403,24 @@ export default function LandingClient({
     };
   }, [fetchConfig]);
 
+  // Periodic poll + window focus listener as reliable realtime fallback
+  useEffect(() => {
+    const onFocus = () => {
+      fetchConfig('focus');
+      fetchAds();
+    };
+    window.addEventListener('focus', onFocus);
+    const interval = setInterval(() => {
+      fetchConfig('poll');
+      fetchAds();
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      clearInterval(interval);
+    };
+  }, [fetchConfig, fetchAds]);
+
   // Scroll listener
   useEffect(() => {
     const onScroll = () => {
@@ -431,6 +469,49 @@ export default function LandingClient({
       className="min-h-screen flex flex-col bg-[#FCFAF5]"
       style={{ '--brand': appConfig.brandColor || '#790F13' } as React.CSSProperties}
     >
+      {/* -------------------------------- Top Promo Banner (CMS Announcement) */}
+      {appConfig.bannerActive && appConfig.bannerText ? (
+        <aside
+          role="region"
+          aria-label="Pengumuman Penting"
+          className="bg-[var(--brand)] text-white text-xs sm:text-sm font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 z-50 relative shadow-xs"
+        >
+          <span>{appConfig.bannerText}</span>
+          {appConfig.bannerLink && (
+            <a
+              href={appConfig.bannerLink}
+              className="underline hover:opacity-90 ml-1 inline-flex items-center gap-1 font-bold"
+            >
+              Lihat Selengkapnya &rarr;
+            </a>
+          )}
+        </aside>
+      ) : ads.length > 0 && ads[0] ? (
+        <aside
+          role="region"
+          aria-label={ads[0].title || "Iklan Promosi"}
+          className="bg-amber-50 border-b border-amber-200 text-amber-900 text-xs sm:text-sm py-2 px-4 z-40 relative shadow-xs"
+        >
+          <div className="shell flex items-center justify-between gap-3 w-full">
+            <div className="flex items-center gap-2 truncate">
+              <span className="bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wide shrink-0">Iklan</span>
+              <span className="font-bold truncate">{ads[0].title}</span>
+            </div>
+            {ads[0].target_url && (
+              <a
+                href={ads[0].target_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-bold text-maroon hover:underline shrink-0 text-xs sm:text-sm"
+              >
+                <span>Lihat Promo</span>
+                &rarr;
+              </a>
+            )}
+          </div>
+        </aside>
+      ) : null}
+
       {/* ------------------------------------------------------------- Header */}
       <header className={`site-header ${isScrolled ? 'site-header--scrolled' : ''}`}>
         <div className="shell">

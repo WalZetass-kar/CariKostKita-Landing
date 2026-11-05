@@ -10,7 +10,8 @@ import { cache } from 'react';
  */
 export const publicApiUrl = (
   process.env.NEXT_PUBLIC_CARIKOSTKITA_API_URL ||
-  'https://carikostkitafastapi.vercel.app'
+  process.env.CARIKOSTKITA_API_URL ||
+  'https://api.carikostkita.my.id'
 ).replace(/\/+$/, '');
 
 export const loadLandingSettings = cache(async (): Promise<Record<string, any> | null> => {
