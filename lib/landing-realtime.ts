@@ -81,8 +81,18 @@ export function resolveRealtimeConfig(): Promise<RealtimeConfig | null> {
         const json = await res.json().catch(() => null);
         const cfg = json?.data || json?.config || null;
         if (!cfg || !cfg.supabase_url || !cfg.supabase_anon_key) return null;
+        const rawUrl = String(cfg.supabase_url || '').trim();
+        // Guard against internal docker hostnames or insecure HTTP on HTTPS origins
+        if (
+          !rawUrl ||
+          rawUrl.includes('carikostkita_nginx') ||
+          rawUrl.includes('localhost') ||
+          (typeof window !== 'undefined' && window.location.protocol === 'https:' && rawUrl.startsWith('http://'))
+        ) {
+          return null;
+        }
         return {
-          url: cfg.supabase_url as string,
+          url: rawUrl,
           anonKey: cfg.supabase_anon_key as string,
           channel: (cfg.channel as string) || LANDING_SETTINGS_CHANNEL,
           event: (cfg.event as string) || LANDING_SETTINGS_EVENT,

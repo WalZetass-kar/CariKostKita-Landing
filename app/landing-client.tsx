@@ -227,6 +227,9 @@ export default function LandingClient({
     );
   }, [ads]);
 
+  const activePopupAdRef = useRef<any>(null);
+  activePopupAdRef.current = activePopupAd;
+
   useEffect(() => {
     if (activePopupAd) {
       try {
@@ -382,7 +385,7 @@ export default function LandingClient({
         } catch (_) {
           setShowPopupModal(true);
         }
-      } else {
+      } else if (!activePopupAdRef.current) {
         setShowPopupModal(false);
       }
 
