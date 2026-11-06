@@ -488,7 +488,7 @@ export default function LandingClient({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [legalModal.open, showModal, showPopupModal, mobileMenuOpen, handleClosePopup]);
 
-  const apk = appConfig.apk || '/releases/CariKostKita-v1.3.3-release.apk';
+  const apk = appConfig.apk || '/releases/CariKostKita-v1.3.4-release.apk';
   const waNumber = appConfig.waNumber || '6285272160879';
   const waHelpUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(
     `Halo Admin ${appConfig.appName}, saya ingin bertanya mengenai pencarian kost di ${appConfig.targetCity}.`
