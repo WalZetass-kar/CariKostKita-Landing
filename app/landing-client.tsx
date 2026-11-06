@@ -1490,32 +1490,20 @@ export default function LandingClient({
                   </a>
                 </li>
                 <li className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setLegalModal({
-                        open: true,
-                        title: 'Syarat & Ketentuan Penggunaan',
-                        content: appConfig.legalTerms,
-                      })
-                    }
+                  <a
+                    href="/terms"
+                    className="hover:underline transition text-inherit"
                   >
                     Syarat & Ketentuan
-                  </button>
+                  </a>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setLegalModal({
-                        open: true,
-                        title: 'Kebijakan Privasi',
-                        content: appConfig.legalPrivacy,
-                      })
-                    }
+                  <a
+                    href="/privacy"
+                    className="hover:underline transition text-inherit"
                   >
                     Kebijakan Privasi
-                  </button>
+                  </a>
                 </li>
               </ul>
             </div>
