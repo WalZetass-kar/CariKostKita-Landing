@@ -70,6 +70,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       images: [ogImage],
     },
+    verification: {
+      google: '9YA1rPr3OQTa9FeczFtY2ToC-l01Mfh9Nz9xeT_yiwc',
+    },
   };
 }
 
@@ -82,6 +85,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id" className={`scroll-smooth ${jakartaSans.variable}`}>
+      <head>
+        <meta name="google-site-verification" content="9YA1rPr3OQTa9FeczFtY2ToC-l01Mfh9Nz9xeT_yiwc" />
+      </head>
       <body className={`${jakartaSans.className} antialiased bg-[#FCFAF5] text-[#261B19]`}>
         {children}
       </body>
