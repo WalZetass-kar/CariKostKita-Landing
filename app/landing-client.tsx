@@ -592,7 +592,7 @@ export default function LandingClient({
                 download
               >
                 <FontAwesomeIcon icon={faDownload} />
-                <span>Download APK ({appConfig.versionName || 'v1.3.3'})</span>
+                <span>Download APK ({appConfig.versionName || 'v1.3.6'})</span>
               </a>
             </div>
 
@@ -643,7 +643,7 @@ export default function LandingClient({
                 download
               >
                 <FontAwesomeIcon icon={faDownload} />
-                <span>Download APK ({appConfig.versionName || 'v1.3.3'})</span>
+                <span>Download APK ({appConfig.versionName || 'v1.3.6'})</span>
               </a>
             </div>
           </nav>
@@ -691,7 +691,7 @@ export default function LandingClient({
               <div className="hero-meta">
                 <span className="hero-meta-item">
                   <FontAwesomeIcon icon={faAndroid} className="text-amber-300" />
-                  <span>Versi {appConfig.versionName || 'v1.3.3'}</span>
+                  <span>Versi {appConfig.versionName || 'v1.3.6'}</span>
                 </span>
                 <span className="hero-meta-dot" />
                 <span className="hero-meta-item">{appConfig.apkSize || '3.5 MB'}</span>
@@ -1319,7 +1319,7 @@ export default function LandingClient({
                 )}
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">
                   <FontAwesomeIcon icon={faAndroid} />
-                  <span>Rilis Resmi Android {appConfig.versionName || 'v1.3.3'}</span>
+                  <span>Rilis Resmi Android {appConfig.versionName || 'v1.3.6'}</span>
                 </div>
               </div>
 
@@ -1339,7 +1339,7 @@ export default function LandingClient({
                   download
                 >
                   <FontAwesomeIcon icon={faDownload} />
-                  <span>Download APK ({appConfig.versionName || 'v1.3.3'})</span>
+                  <span>Download APK ({appConfig.versionName || 'v1.3.6'})</span>
                 </a>
 
                 <button
@@ -1516,7 +1516,7 @@ export default function LandingClient({
             <div className="flex items-center gap-4 text-xs">
               <span>Kota Pekanbaru, Provinsi Riau</span>
               <span>•</span>
-              <span>Rilis v1.3.3</span>
+              <span>Rilis {appConfig.versionName || 'v1.3.6'}</span>
             </div>
           </div>
         </div>
@@ -1558,7 +1558,7 @@ export default function LandingClient({
 
             <div className="modal-body">
               <p className="mb-4">
-                Berkas APK CariKostKita <b>{appConfig.versionName || 'v1.3.3'}</b> sedang diunduh ke perangkat Anda. Jika peramban (Chrome) menampilkan dialog peringatan standar, ikuti langkah mudah berikut:
+                Berkas APK CariKostKita <b>{appConfig.versionName || 'v1.3.6'}</b> sedang diunduh ke perangkat Anda. Jika peramban (Chrome) menampilkan dialog peringatan standar, ikuti langkah mudah berikut:
               </p>
 
               <div className="install-guide-steps mb-6">
