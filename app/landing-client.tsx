@@ -488,7 +488,7 @@ export default function LandingClient({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [legalModal.open, showModal, showPopupModal, mobileMenuOpen, handleClosePopup]);
 
-  const apk = appConfig.apk || 'https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.3.7/CariKostKita-v1.3.7-release.apk';
+  const apk = appConfig.apk || 'https://github.com/WalZetass-kar/CariKostKita/releases/download/v1.3.8/CariKostKita-v1.3.8-release.apk';
   const waNumber = appConfig.waNumber || '6285272160879';
   const waHelpUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(
     `Halo Admin ${appConfig.appName}, saya ingin bertanya mengenai pencarian kost di ${appConfig.targetCity}.`
@@ -592,7 +592,7 @@ export default function LandingClient({
                 download
               >
                 <FontAwesomeIcon icon={faDownload} />
-                <span>Download APK ({appConfig.versionName || 'v1.3.7'})</span>
+                <span>Download APK ({appConfig.versionName || 'v1.3.8'})</span>
               </a>
             </div>
 
@@ -643,7 +643,7 @@ export default function LandingClient({
                 download
               >
                 <FontAwesomeIcon icon={faDownload} />
-                <span>Download APK ({appConfig.versionName || 'v1.3.7'})</span>
+                <span>Download APK ({appConfig.versionName || 'v1.3.8'})</span>
               </a>
             </div>
           </nav>
@@ -691,7 +691,7 @@ export default function LandingClient({
               <div className="hero-meta">
                 <span className="hero-meta-item">
                   <FontAwesomeIcon icon={faAndroid} className="text-amber-300" />
-                  <span>Versi {appConfig.versionName || 'v1.3.7'}</span>
+                  <span>Versi {appConfig.versionName || 'v1.3.8'}</span>
                 </span>
                 <span className="hero-meta-dot" />
                 <span className="hero-meta-item">{appConfig.apkSize || '3.5 MB'}</span>
@@ -1319,7 +1319,7 @@ export default function LandingClient({
                 )}
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-bold uppercase tracking-wider border border-white/20">
                   <FontAwesomeIcon icon={faAndroid} />
-                  <span>Rilis Resmi Android {appConfig.versionName || 'v1.3.7'}</span>
+                  <span>Rilis Resmi Android {appConfig.versionName || 'v1.3.8'}</span>
                 </div>
               </div>
 
@@ -1339,7 +1339,7 @@ export default function LandingClient({
                   download
                 >
                   <FontAwesomeIcon icon={faDownload} />
-                  <span>Download APK ({appConfig.versionName || 'v1.3.7'})</span>
+                  <span>Download APK ({appConfig.versionName || 'v1.3.8'})</span>
                 </a>
 
                 <button
@@ -1516,7 +1516,7 @@ export default function LandingClient({
             <div className="flex items-center gap-4 text-xs">
               <span>Kota Pekanbaru, Provinsi Riau</span>
               <span>•</span>
-              <span>Rilis {appConfig.versionName || 'v1.3.7'}</span>
+              <span>Rilis {appConfig.versionName || 'v1.3.8'}</span>
             </div>
           </div>
         </div>
@@ -1558,7 +1558,7 @@ export default function LandingClient({
 
             <div className="modal-body">
               <p className="mb-4">
-                Berkas APK CariKostKita <b>{appConfig.versionName || 'v1.3.7'}</b> sedang diunduh ke perangkat Anda. Jika peramban (Chrome) menampilkan dialog peringatan standar, ikuti langkah mudah berikut:
+                Berkas APK CariKostKita <b>{appConfig.versionName || 'v1.3.8'}</b> sedang diunduh ke perangkat Anda. Jika peramban (Chrome) menampilkan dialog peringatan standar, ikuti langkah mudah berikut:
               </p>
 
               <div className="install-guide-steps mb-6">
